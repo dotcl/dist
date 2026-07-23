@@ -82,5 +82,5 @@ sbcl --script scripts/validate.lisp          # schema only
 LEDGER_CHECK_NETWORK=1 sbcl --script scripts/validate.lisp   # + gh checks
 ```
 
-CI runs both on every push, so the manifest going stale shows up as a red
-build rather than as a surprise months later.
+While this repository is private the workflow is manual (`gh workflow run`);
+it switches to running on every push and weekly once the repository is public.
