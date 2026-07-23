@@ -1,0 +1,27 @@
+name: Validate manifest
+
+on:
+  push:
+  pull_request:
+  # Sources drift on their own: an upstream PR merges, a fork is renamed. A
+  # weekly run turns that into a notification instead of a surprise.
+  schedule:
+    - cron: '0 3 * * 1'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SBCL
+        run: sudo apt-get update && sudo apt-get install -y sbcl
+      - name: Schema
+        run: sbcl --script scripts/validate.lisp
+      - name: Schema + upstream state
+        env:
+          LEDGER_CHECK_NETWORK: '1'
+          GH_TOKEN: ${{ github.token }}
+        run: sbcl --script scripts/validate.lisp
+      - name: qlfile generates
+        run: sbcl --script scripts/gen-qlfile.lisp
