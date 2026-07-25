@@ -4,6 +4,7 @@
 (defpackage #:dotcl-dist
   (:use #:cl)
   (:export #:load-manifest #:entries #:entry-value #:ref-repo #:ref-branch
+           #:ref-tag #:ref-commit #:bundled-p #:dist-entries
            #:manifest-path #:parse-pr))
 
 (in-package #:dotcl-dist)
@@ -33,6 +34,30 @@ manifest itself, which is tagged with a leading :DIST."
 
 (defun ref-branch (ref)
   (when (consp ref) (getf (rest ref) :branch)))
+
+(defun ref-tag (ref)
+  (when (consp ref) (getf (rest ref) :tag)))
+
+(defun ref-commit (ref)
+  "A :ref pinned to an exact commit. Preferred over :branch: it makes a
+regenerated dist byte-identical and keeps unrelated upstream churn out."
+  (when (consp ref) (getf (rest ref) :commit)))
+
+(defun bundled-p (entry)
+  "True when dotcl ships this library itself, so nothing needs fetching.
+
+Separate from :disposition, which records the relationship with upstream. The
+two are independent: quicklisp-client has an open upstream pull request and is
+bundled at the same time."
+  (entry-value entry :bundled))
+
+(defun dist-entries (manifest)
+  "Entries that become releases in the generated dist.
+
+Everything except what dotcl bundles. An entry whose fix is already merged
+upstream still belongs here: the stock quicklisp dist keeps shipping the old
+version until it catches up, which is exactly what :retire-when describes."
+  (remove-if #'bundled-p (entries manifest)))
 
 (defun parse-pr (pr)
   "Split \"owner/repo#123\" into (values \"owner/repo\" 123), or NIL."

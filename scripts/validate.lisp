@@ -145,7 +145,7 @@ could point at, and naming it here would publish its existence."
        (network (getenv "LEDGER_CHECK_NETWORK")))
   (unless (eq (first manifest) :dist)
     (fail "manifest does not start with :dist"))
-  (unless (eql 1 (getf (cdr manifest) :format-version))
+  (unless (eql 2 (getf (cdr manifest) :format-version))
     (fail "unsupported :format-version ~s" (getf (cdr manifest) :format-version)))
   (dolist (entry entries) (check-schema entry))
   (when network

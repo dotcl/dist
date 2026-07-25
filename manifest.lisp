@@ -13,8 +13,8 @@
 ;;;; See README.md for the schema and the promotion/retirement rules.
 
 (:dist
- :format-version 1
- :audited "2026-07-24"
+ :format-version 2
+ :audited "2026-07-26"
  ;; First-party public projects under the same organization. They are not
  ;; libraries carried for dotcl, so the inventory check does not expect them
  ;; here. Only public repositories belong in this list — the check itself
@@ -46,10 +46,14 @@
   (:lib "quicklisp-client"
    :upstream "quicklisp/quicklisp-client"
    :disposition :upstream-pr-open
+   :bundled t
    :ref ("dotcl/quicklisp-client" :branch "dotcl-support")
    :pr "quicklisp/quicklisp-client#245"
    :retire-when "PR 245 merges and dotcl pulls the stock client"
-   :notes "Adds dotcl support to the client's implementation detection and fasl paths.")
+   :notes "Adds dotcl support to the client's implementation detection and fasl paths.
+           dotcl compiles this branch into the quicklisp contrib fasl it ships, so
+           (require :quicklisp) needs no download — hence :bundled, even though the
+           upstream pull request is still open.")
 
   (:lib "babel"
    :upstream "cl-babel/babel"
@@ -64,11 +68,12 @@
    :upstream "common-lisp/asdf"
    :upstream-host :gitlab
    :disposition :bundled-in-release
-   :ref ("dotcl/asdf" :branch "dotcl-0.1.11")
+   :bundled t
+   :ref ("dotcl/asdf" :branch "dotcl-0.1.21")
    :pr nil
    :retire-when "the upstream merge request lands and dotcl stops vendoring asdf"
    :notes "Shipped inside dotcl releases as a precompiled fasl, so the branch here is
-           what a source build clones. dotcl-0.1.11 is the current compatibility
+           what a source build clones. dotcl-0.1.21 is the current compatibility
            generation, updated in place; a new dotcl-X.Y.Z branch is cut only on the
            next hard incompatibility, and older branches stay frozen for older
            releases. The upstream project lives on GitLab and the merge request is

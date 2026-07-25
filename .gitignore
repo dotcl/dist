@@ -1,0 +1,9 @@
+# Working area for scripts/gen-dist.lisp: clones of the source repositories and
+# the tarballs built from them. The tarballs are published as Release assets,
+# never committed — binaries in git history would outlive every dist version
+# that referenced them.
+build/
+
+# Generated from the manifest on demand.
+qlfile
+qlfile.lock

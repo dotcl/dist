@@ -23,6 +23,29 @@ sbcl --script scripts/gen-qlfile.lisp > qlfile   # or: dotcl scripts/gen-qlfile.
 Entries whose support code is already merged upstream, or that ship inside a
 dotcl release, produce no `qlfile` line — you want stock for those.
 
+### As a quicklisp dist
+
+The same manifest generates a real quicklisp dist, so a dotcl user gets the
+patched versions from an ordinary `quickload` instead of arranging sources by
+hand:
+
+```sh
+dotcl scripts/gen-dist.lisp        # version defaults to today's date
+```
+
+It writes the dist index under `docs/` — served by GitHub Pages, so the
+subscription URL is `https://dotcl.github.io/dist/dotcl.txt` — and the release
+tarballs under `build/`, which belong in the GitHub Release named
+`dist-<version>`. Tarballs are never committed.
+
+Tarballs are built with `git archive … | gzip -n` at a resolved commit, so the
+same input always produces the same bytes. GitHub's own `/archive/` tarballs
+are not stable over time and are deliberately not used.
+
+Give the dist a higher preference than the stock one and its releases shadow
+the stock versions system by system. When an entry retires, the release simply
+stops appearing and the stock version becomes visible again.
+
 ## Schema
 
 Each entry is a plist:
@@ -33,7 +56,8 @@ Each entry is a plist:
 | `:upstream` | `owner/repo` of the upstream project |
 | `:upstream-host` | `:github` (default) or `:gitlab` |
 | `:disposition` | see below |
-| `:ref` | where the dotcl support code lives *now* — `:upstream-default`, or `("owner/repo" :branch "name")` |
+| `:ref` | where the dotcl support code lives *now* — `:upstream-default`, or `("owner/repo" :branch "name" \| :tag "name" \| :commit "sha")` |
+| `:bundled` | `t` when dotcl ships the library itself, so it needs no dist release |
 | `:pr` | upstream pull request, as `owner/repo#number`, or `nil` |
 | `:fork-status` | tracks a fork that has outlived its purpose, e.g. `(:redundant "…")` |
 | `:retire-when` | the condition under which this entry is deleted |
@@ -46,6 +70,16 @@ Each entry is a plist:
 - `:upstream-pr-open` — pull request filed and pending
 - `:bundled-in-release` — shipped inside a dotcl release rather than pulled
 - `:fork-only` — public fork exists, no upstream pull request yet
+
+`:bundled` is a separate axis from `:disposition`: it says dotcl ships the
+library itself, which is independent of how the upstream conversation is going.
+quicklisp-client is both `:upstream-pr-open` and `:bundled` — the pull request
+is still open, and dotcl compiles that branch into the fasl it ships.
+
+Prefer `:commit` in a `:ref`. A pinned commit makes a regenerated dist
+byte-identical, keeps unrelated upstream churn out of it, and means the only
+thing that can change a dist is a change to this file. `:branch` still works
+when following a head is the point.
 
 ## Rules this repository runs on
 
