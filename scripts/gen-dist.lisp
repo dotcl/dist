@@ -293,10 +293,21 @@ read-time conditionals and #. all mean the text is not the truth."
     ;; surround the working directory, which makes the output depend on where it
     ;; was run.
     (dolist (r releases)
-      (dolist (asd (getf r :asds))
-        (dolist (system (systems-in-asd (getf r :checkout) asd))
-          (push (list (getf r :lib) (pathname-name asd) (car system) (cdr system))
-                systems))))
+      (let ((usable '()))
+        (dolist (asd (getf r :asds))
+          (let ((found (systems-in-asd (getf r :checkout) asd)))
+            (when found
+              (push asd usable)
+              (dolist (system found)
+                (push (list (getf r :lib) (pathname-name asd) (car system) (cdr system))
+                      systems)))))
+        ;; Only the .asd files whose systems made it into systems.txt may be
+        ;; listed. install walks a release's system-files and looks each one up
+        ;; by name; a file with no matching system makes find-system-in-dist
+        ;; return NIL and the install dies inside install-metadata-file. So an
+        ;; unreadable .asd is not a metadata gap — it makes the whole release
+        ;; uninstallable, and the file has to be left out.
+        (setf (getf r :asds) (nreverse usable))))
     (setf systems (nreverse systems))
     (with-open-file (s (merge-pathnames "distinfo.txt" dir)
                        :direction :output :if-exists :supersede)
