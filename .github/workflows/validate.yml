@@ -1,16 +1,14 @@
 name: Validate manifest
 
 on:
-  # Manual only while this repository is private: private-repo Actions minutes
-  # are metered, and this check is cheap to run by hand. Enable the push /
-  # pull_request / weekly-schedule triggers below when the repository goes
-  # public — sources drift on their own (an upstream PR merges, a fork is
-  # renamed), and the weekly run is what turns that into a notification.
   workflow_dispatch:
-  # push:
-  # pull_request:
-  # schedule:
-  #   - cron: '0 3 * * 1'
+  push:
+  pull_request:
+  # Sources drift without anyone touching this repository — an upstream pull
+  # request merges, a fork gets renamed — so the weekly run is what turns that
+  # into a notification.
+  schedule:
+    - cron: '0 3 * * 1'
 
 jobs:
   validate:
