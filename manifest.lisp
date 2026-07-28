@@ -30,10 +30,10 @@
    :upstream "trivial-gray-streams/trivial-gray-streams"
    :disposition :upstream-merged
    :ref :upstream-default
-   :pr "trivial-gray-streams/trivial-gray-streams#17"
+   :pr "trivial-gray-streams/trivial-gray-streams#18"
    :fork-status (:redundant "dotcl/trivial-gray-streams:dotcl — merged upstream, kept only until the entry retires")
-   :retire-when "a quicklisp dist ships the merged version and dotcl pulls stock"
-   :notes "Adds :dotcl to the gray-streams backend selection. Merged 2026-07-13.")
+   :retire-when "a quicklisp dist ships a tgs that includes the file-position bridge (PR 18) and dotcl pulls stock"
+   :notes "Two upstream changes, both merged. PR 17 adds :dotcl to the gray-streams backend selection (2026-07-13). PR 18 bridges dotcl-gray:stream-file-position to tgs's own generic function (2026-07-24); :pr names it because it is the binding one — dotcl no longer special-cases the tgs package in FILE-POSITION, so a tgs without PR 18 reports NIL there.")
 
   (:lib "micros"
    :upstream "lem-project/micros"
