@@ -20,7 +20,7 @@
   (push (apply #'format nil fmt args) *problems*))
 
 (defun getenv (name)
-  #+sbcl (sb-posix:getenv name)
+  #+sbcl (sb-ext:posix-getenv name)
   #-sbcl (uiop:getenv name))
 
 (defun run-command (program args)
