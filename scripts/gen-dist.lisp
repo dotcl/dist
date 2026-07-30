@@ -11,7 +11,9 @@
 ;;;; Writes text files under docs/ — GitHub Pages serves that directory, so the
 ;;;; subscription URL is https://dotcl.github.io/dist/dotcl.txt. Tarballs are
 ;;;; written to build/ and belong in the Release named after the dist version;
-;;;; they are deliberately not committed.
+;;;; they are deliberately not committed. A tarball an earlier version already
+;;;; published keeps that version's URL, so only the new ones are uploaded —
+;;;; see PUBLISHED-ARCHIVE-URLS.
 
 (load (merge-pathnames "common.lisp" (or *load-truename* *default-pathname-defaults*)))
 
@@ -32,10 +34,16 @@ keep binaries out of the git history.")
 (defparameter *root*
   ;; The name and type have to be dropped first: merging "../" against a file
   ;; pathname keeps them, which silently yields .../build/src/<lib>/gen-dist.lisp.
-  (merge-pathnames "../"
-                   (make-pathname :name nil :type nil
-                                  :defaults (or *load-truename*
-                                                *default-pathname-defaults*))))
+  ;;
+  ;; TRUENAME then resolves the "scripts/../" away. Opening files works either
+  ;; way, but listing a directory does not: given a path with an unresolved
+  ;; ".." in it, UIOP:SUBDIRECTORIES returns NIL rather than signalling, so a
+  ;; directory walk silently finds nothing.
+  (truename
+   (merge-pathnames "../"
+                    (make-pathname :name nil :type nil
+                                   :defaults (or *load-truename*
+                                                 *default-pathname-defaults*)))))
 
 (defun rooted (relative) (merge-pathnames relative *root*))
 
@@ -246,14 +254,68 @@ read-time conditionals and #. all mean the text is not the truth."
   (format stream "canonical-distinfo-url: ~a/~a/~a/distinfo.txt~%" *base-url* *dist-name* version)
   (format stream "distinfo-subscription-url: ~a/~a.txt~%" *base-url* *dist-name*))
 
-(defun archive-url (version prefix)
-  (format nil "~a/dist-~a/~a.tar.gz" *archive-base-url* version prefix))
+(defun published-archive-urls ()
+  "Tarball file name -> the URL an already-published dist gave it.
+
+A tarball is named after the commit it was built from and its bytes are
+reproducible, so a file that has been uploaded once never needs a second home.
+Every releases.txt this script has ever written is committed under docs/, and
+each line carries the full URL — so the record of where each tarball lives is
+already in the repository. Reading it back means a new dist version reuses the
+existing URL and only genuinely new tarballs get uploaded.
+
+Deliberately no network and no extra state file: generation still depends on
+nothing but the files in this repository, so it stays reproducible offline.
+
+The consequence is that an old release can never be deleted, since newer dist
+versions point into it."
+  (let ((urls (make-hash-table :test #'equal)))
+    ;; Sorted so "first writer wins" below means the oldest version, whatever
+    ;; order the directory listing happens to return. Version directories are
+    ;; dates, so string order is chronological order. SUBDIRECTORIES rather than
+    ;; a wild DIRECTORY pattern: a wild directory component is not portable.
+    ;;
+    ;; The pathnames stay pathnames — going through NAMESTRING and back would
+    ;; hand MERGE-PATHNAMES a Windows path whose backslashes are pathname escape
+    ;; characters, and the silent result is an empty map and a re-upload of
+    ;; everything.
+    (dolist (dir (sort (uiop:subdirectories
+                        (rooted (format nil "docs/~a/" *dist-name*)))
+                       #'string< :key #'namestring))
+      (let ((path (merge-pathnames "releases.txt" dir)))
+        ;; A version directory without a readable releases.txt means either a
+        ;; half-written version or a path bug. Either way, carrying on would
+        ;; quietly lose the URLs it holds, so stop instead.
+        (with-open-file (s path)
+          (loop for line = (read-line s nil) while line
+                unless (or (zerop (length line)) (char= (char line 0) #\#))
+                  do (let* ((space (position #\Space line))
+                            (rest (and space (subseq line (1+ space))))
+                            (end (and rest (position #\Space rest)))
+                            (url (and rest (subseq rest 0 end)))
+                            (slash (and url (position #\/ url :from-end t))))
+                       (unless slash
+                         (error "~a: cannot read an archive URL out of ~s" path line))
+                       (let ((file (subseq url (1+ slash))))
+                         ;; First writer wins: the earliest release that
+                         ;; published this file is the one holding the asset.
+                         (unless (gethash file urls)
+                           (setf (gethash file urls) url))))))))
+    urls))
+
+(defun archive-url (version prefix published)
+  (let ((file (format nil "~a.tar.gz" prefix)))
+    (or (gethash file published)
+        (format nil "~a/dist-~a/~a" *archive-base-url* version file))))
 
 (defun generate ()
   (let* ((manifest (load-manifest))
          (entries (dist-entries manifest))
          (version (version))
          (dir (version-dir version))
+         ;; Read before anything is written: the map must not see this run's
+         ;; own releases.txt.
+         (published (published-archive-urls))
          (releases '())
          (systems '()))
     (ensure-directories-exist dir)
@@ -270,7 +332,7 @@ read-time conditionals and #. all mean the text is not the truth."
                (tarball (build-tarball lib checkout commit prefix))
                (bytes (file-bytes tarball)))
           (push (list :lib lib
-                      :url (archive-url version prefix)
+                      :url (archive-url version prefix published)
                       :size (length bytes)
                       :md5 (digest "MD5" bytes)
                       :sha1 (digest "SHA1" bytes)

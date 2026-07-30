@@ -96,4 +96,31 @@
    :pr nil
    :retire-when "an upstream PR merges and reaches the stock distribution"
    :notes "Adds a dotcl backend plus the .asd component guard that selects it.
-           Upstream PR not filed yet.")))
+           Upstream PR not filed yet.")
+
+  (:lib "trivial-garbage"
+   :upstream "trivial-garbage/trivial-garbage"
+   :disposition :fork-only
+   :ref ("dotcl/trivial-garbage" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream PR merges and reaches the stock distribution"
+   :notes "Weak pointers, weak hash-tables and finalizers on dotcl's own
+           facilities: System.WeakReference, MAKE-HASH-TABLE :weakness for all
+           four weakness kinds, and real GC finalizers. Without this the stock
+           .asd refuses to load at all, because its supported-implementation
+           guard signals an error on an unknown host. Upstream test suite
+           passes, 11 of 11. Upstream PR not filed yet.")
+
+  (:lib "bordeaux-threads"
+   :upstream "sionescu/bordeaux-threads"
+   :disposition :fork-only
+   :ref ("dotcl/bordeaux-threads" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream PR merges and reaches the stock distribution"
+   :notes "Backends for both APIs on System.Threading, and an ATOMIC-INTEGER
+           backed by an Interlocked cell, so the counter is lock-free.
+           INTERRUPT-THREAD is delivered the next time the target thread blocks
+           rather than preempting a running computation, which is as much as
+           .NET allows; that is enough for the portable WITH-TIMEOUT. Acquiring
+           a lock with a :timeout is the one gap and signals NOT-IMPLEMENTED.
+           Both upstream test suites pass. Upstream PR not filed yet.")))

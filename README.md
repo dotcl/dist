@@ -38,6 +38,17 @@ subscription URL is `https://dotcl.github.io/dist/dotcl.txt` — and the release
 tarballs under `build/`, which belong in the GitHub Release named
 `dist-<version>`. Tarballs are never committed.
 
+**Only upload the tarballs this version introduced.** A tarball is named after
+the commit it came from and its bytes are reproducible, so a file that has been
+uploaded once never needs a second home. Generation reads the `releases.txt` of
+every version already under `docs/` and reuses the URL found there, so a version
+that changes one library leaves the other entries pointing at the releases that
+already hold them. `git status` after generating shows which files in `build/`
+are new; those are the ones to attach.
+
+The consequence is that a release can never be deleted, because later dist
+versions point into it.
+
 Tarballs are built with `git archive … | gzip -n` at a resolved commit, so the
 same input always produces the same bytes. GitHub's own `/archive/` tarballs
 are not stable over time and are deliberately not used.

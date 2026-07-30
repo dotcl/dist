@@ -1,1 +1,2 @@
 2026-07-26 https://dotcl.github.io/dist/dotcl/2026-07-26/distinfo.txt
+2026-07-30 https://dotcl.github.io/dist/dotcl/2026-07-30/distinfo.txt
