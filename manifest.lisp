@@ -76,8 +76,13 @@
            what a source build clones. dotcl-0.1.21 is the current compatibility
            generation, updated in place; a new dotcl-X.Y.Z branch is cut only on the
            next hard incompatibility, and older branches stay frozen for older
-           releases. The upstream project lives on GitLab and the merge request is
-           still waiting on account approval.")
+           releases. The upstream project lives on GitLab, where a merge request is
+           filed and waiting for review:
+           https://gitlab.common-lisp.net/asdf/asdf/-/merge_requests/252. It carries
+           the uiop OS-abstraction subset — getenv/quit/argv, run-program,
+           raw-command-line-arguments, package-local-nicknames, getcwd,
+           *unspecific-pathname-type* — and the branch shipped here has grown past it
+           since, so that merge landing would not on its own retire this entry.")
 
   (:lib "cffi"
    :upstream "cffi/cffi"
