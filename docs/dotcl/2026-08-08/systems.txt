@@ -1,0 +1,21 @@
+# project system-file system-name [dependency1..dependencyN]
+trivial-gray-streams trivial-gray-streams-test trivial-gray-streams-test trivial-gray-streams
+trivial-gray-streams trivial-gray-streams trivial-gray-streams
+micros micros micros/tests rove micros
+micros micros micros
+babel babel-streams babel-streams babel alexandria trivial-gray-streams
+babel babel-tests babel-tests babel hu.dwim.stefil
+babel babel babel trivial-features alexandria
+cffi cffi-examples cffi-examples cffi
+cffi cffi-grovel cffi-grovel uiop cffi cffi-toolchain alexandria
+cffi cffi-toolchain cffi-toolchain cffi
+cffi cffi-uffi-compat cffi-uffi-compat cffi
+cffi cffi cffi/c2ffi-generator cffi/c2ffi cl-ppcre cl-json
+cffi cffi cffi/c2ffi alexandria cffi uiop
+cffi cffi cffi alexandria babel
+cffi uffi uffi cffi-uffi-compat
+trivial-features trivial-features trivial-features
+trivial-garbage trivial-garbage trivial-garbage/tests trivial-garbage rt
+trivial-garbage trivial-garbage trivial-garbage
+bordeaux-threads bordeaux-threads bordeaux-threads/test bordeaux-threads fiveam
+bordeaux-threads bordeaux-threads bordeaux-threads alexandria global-vars trivial-features trivial-garbage
