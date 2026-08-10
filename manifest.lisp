@@ -96,12 +96,20 @@
 
   (:lib "trivial-features"
    :upstream "trivial-features/trivial-features"
-   :disposition :fork-only
+   :disposition :upstream-pr-open
    :ref ("dotcl/trivial-features" :branch "dotcl")
-   :pr nil
-   :retire-when "an upstream PR merges and reaches the stock distribution"
+   :pr "trivial-features/trivial-features#25"
+   :retire-when "PR 25 merges and the merged version reaches the stock distribution"
    :notes "Adds a dotcl backend plus the .asd component guard that selects it.
-           Upstream PR not filed yet.")
+           The backend defers to dotcl for everything dotcl already answers, so
+           it is about as thin as the ABCL one; what it does query, it queries
+           at load time rather than with read-time #+, because a dotcl FASL is
+           portable IL and can be loaded on an architecture other than the one
+           that compiled it. It first derived :32-bit / :64-bit from
+           most-positive-fixnum, which is wrong here — dotcl's fixnum is a .NET
+           Int64 whatever the pointer is, so on browser-wasm that pushed :64-BIT
+           beside the :32-BIT dotcl had already taken from IntPtr.Size. That
+           clause is gone as of dist 2026-08-08.")
 
   (:lib "trivial-garbage"
    :upstream "trivial-garbage/trivial-garbage"
