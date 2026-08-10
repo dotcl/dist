@@ -136,4 +136,25 @@
            rather than preempting a running computation, which is as much as
            .NET allows; that is enough for the portable WITH-TIMEOUT. Acquiring
            a lock with a :timeout is the one gap and signals NOT-IMPLEMENTED.
-           Both upstream test suites pass. Upstream PR not filed yet.")))
+           Both upstream test suites pass. Upstream PR not filed yet.")
+
+  (:lib "usocket"
+   :upstream "usocket/usocket"
+   :disposition :fork-only
+   :ref ("dotcl/usocket" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream PR merges and reaches the stock distribution"
+   :notes "A backend on System.Net.Sockets: TCP client and server, UDP, name
+           lookup, and WAIT-FOR-INPUT over Socket.Select. Stock usocket loads on
+           dotcl and does nothing, since the portable layer is all it has and
+           every socket-*-internal is left undefined, so the failure is a
+           run-time UNDEFINED-FUNCTION rather than a load error.
+
+           Errors are mapped from SocketException's SocketErrorCode, whose
+           numbers are the Winsock ones on every platform, and never from the
+           message text, which .NET localises. A failure does not always arrive
+           as a SocketException -- NetworkStream wraps it in an IOException, a
+           connect that failed while its task was awaited in an
+           AggregateException -- so the InnerException chain is walked.
+
+           Upstream PR not filed yet; upstream has been quiet since 2026-05.")))
