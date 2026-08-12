@@ -96,20 +96,25 @@
 
   (:lib "trivial-features"
    :upstream "trivial-features/trivial-features"
-   :disposition :upstream-pr-open
-   :ref ("dotcl/trivial-features" :branch "dotcl")
+   :disposition :upstream-merged
+   :ref :upstream-default
    :pr "trivial-features/trivial-features#25"
-   :retire-when "PR 25 merges and the merged version reaches the stock distribution"
-   :notes "Adds a dotcl backend plus the .asd component guard that selects it.
-           The backend defers to dotcl for everything dotcl already answers, so
-           it is about as thin as the ABCL one; what it does query, it queries
-           at load time rather than with read-time #+, because a dotcl FASL is
-           portable IL and can be loaded on an architecture other than the one
-           that compiled it. It first derived :32-bit / :64-bit from
-           most-positive-fixnum, which is wrong here — dotcl's fixnum is a .NET
-           Int64 whatever the pointer is, so on browser-wasm that pushed :64-BIT
-           beside the :32-BIT dotcl had already taken from IntPtr.Size. That
-           clause is gone as of dist 2026-08-08.")
+   :fork-status (:redundant "dotcl/trivial-features:dotcl - merged upstream, kept only until the entry retires")
+   :retire-when "a quicklisp dist ships a trivial-features that includes dotcl in the guard"
+   :notes "PR 25 merged 2026-08-11 as one line: dotcl joins the
+           supported-implementations guard, and there is no backend file.
+           dotcl already pushes everything SPEC.md specifies, deciding all of it
+           from the CLR when the image starts rather than at read time - which
+           matters here, since a dotcl FASL is portable IL and can be loaded on
+           an architecture other than the one that compiled it. SPEC.md calls
+           this a null implementation.
+
+           An earlier draft did carry a backend. Measuring showed every pushnew
+           in it was a no-op, and it turned up two bugs in dotcl on the way: the
+           architecture feature said :x86-64 for everything that was not arm64,
+           and deriving :32-bit / :64-bit from most-positive-fixnum is wrong
+           here, since dotcl's fixnum is a .NET Int64 whatever the pointer is.
+           Both fixed in dotcl; the draft is gone.")
 
   (:lib "trivial-garbage"
    :upstream "trivial-garbage/trivial-garbage"
