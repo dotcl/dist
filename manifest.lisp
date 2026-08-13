@@ -143,6 +143,25 @@
            a lock with a :timeout is the one gap and signals NOT-IMPLEMENTED.
            Both upstream test suites pass. Upstream PR not filed yet.")
 
+  (:lib "cl-fad"
+   :upstream "edicl/cl-fad"
+   :disposition :upstream-pr-open
+   :ref ("dotcl/cl-fad" :branch "dotcl")
+   :pr "edicl/cl-fad#40"
+   :retire-when "PR 40 merges and a quicklisp dist ships the merged version"
+   :notes "Four reader conditionals, no new code. LIST-DIRECTORY joins the CMUCL and
+           SCL group rather than the ECL and Clasp one: on dotcl a \"*.*\" wildcard
+           already matches subdirectories as well as files and returns them in
+           directory form, so the ECL union with \"*/\" reports every subdirectory
+           twice. Checked against SBCL, which returns the same pathnames in the same
+           order.
+
+           The GETENV arm in temporary-files.lisp is not reachable on dotcl today.
+           Setting up the TEMPORARY-FILES logical host is guarded by an error from
+           LOGICAL-PATHNAME-TRANSLATIONS on an undefined host, which dotcl does not
+           signal yet, so the whole branch is skipped. It is in the patch because the
+           day dotcl signals there, cl-fad would stop loading without it.")
+
   (:lib "usocket"
    :upstream "usocket/usocket"
    :disposition :fork-only
