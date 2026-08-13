@@ -127,5 +127,5 @@ sbcl --script scripts/validate.lisp          # schema only
 LEDGER_CHECK_NETWORK=1 sbcl --script scripts/validate.lisp   # + gh checks
 ```
 
-While this repository is private the workflow is manual (`gh workflow run`);
-it switches to running on every push and weekly once the repository is public.
+The workflow runs on every push and pull request, and weekly — the scheduled run
+is what notices drift nobody triggered.
