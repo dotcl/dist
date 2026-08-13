@@ -143,6 +143,28 @@
            a lock with a :timeout is the one gap and signals NOT-IMPLEMENTED.
            Both upstream test suites pass. Upstream PR not filed yet.")
 
+  (:lib "dexador"
+   :upstream "fukamachi/dexador"
+   :disposition :upstream-pr-open
+   :ref ("dotcl/dexador" :branch "dotcl")
+   :pr "fukamachi/dexador#204"
+   :retire-when "PR 204 merges and a quicklisp dist ships the merged version"
+   :notes "A backend on System.Net.Http.HttpClient reached through dotcl's dotnet:
+           interop, so on dotcl dexador needs neither usocket nor cl+ssl nor cffi;
+           the .asd gates those files and dependencies behind (:not :dotcl).
+           HttpClient does TLS, redirects and content decoding itself, which is why
+           the backend is one file rather than a socket stack, and why it is selected
+           on every OS rather than only on Windows the way winhttp is.
+
+           :use-connection-pool and :keep-alive map onto a cached HttpClient keyed by
+           insecure and max-redirects, so .NET's own per-origin pool reuses TCP and
+           TLS across requests. A per-request timeout needs a CancellationTokenSource
+           because HttpClient.Timeout is per client, not per request.
+
+           Checked against the winhttp backend on SBCL: status, content type and body,
+           a 404 signalling with its status, redirect following, and pooling on and
+           off all agree.")
+
   (:lib "cl-fad"
    :upstream "edicl/cl-fad"
    :disposition :upstream-pr-open
