@@ -167,11 +167,12 @@
 
   (:lib "cl-fad"
    :upstream "edicl/cl-fad"
-   :disposition :upstream-pr-open
-   :ref ("dotcl/cl-fad" :branch "dotcl")
+   :disposition :upstream-merged
+   :ref :upstream-default
    :pr "edicl/cl-fad#40"
-   :retire-when "PR 40 merges and a quicklisp dist ships the merged version"
-   :notes "Four reader conditionals, no new code. LIST-DIRECTORY joins the CMUCL and
+   :fork-status (:redundant "dotcl/cl-fad:dotcl - merged upstream, kept only until the entry retires")
+   :retire-when "a quicklisp dist ships a cl-fad that includes PR 40"
+   :notes "PR 40 merged 2026-08-13, unchanged. Four reader conditionals, no new code. LIST-DIRECTORY joins the CMUCL and
            SCL group rather than the ECL and Clasp one: on dotcl a \"*.*\" wildcard
            already matches subdirectories as well as files and returns them in
            directory form, so the ECL union with \"*/\" reports every subdirectory
