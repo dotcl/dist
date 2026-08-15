@@ -65,7 +65,7 @@ Each entry is a plist:
 |---|---|
 | `:lib` | library name, as the distribution knows it |
 | `:upstream` | `owner/repo` of the upstream project |
-| `:upstream-host` | `:github` (default) or `:gitlab` |
+| `:upstream-host` | `:github` (default), `:codeberg`, or `:gitlab` |
 | `:disposition` | see below |
 | `:ref` | where the dotcl support code lives *now* — `:upstream-default`, or `("owner/repo" :branch "name" \| :tag "name" \| :commit "sha")` |
 | `:bundled` | `t` when dotcl ships the library itself, so it needs no dist release |
@@ -86,6 +86,14 @@ Each entry is a plist:
 library itself, which is independent of how the upstream conversation is going.
 quicklisp-client is both `:upstream-pr-open` and `:bundled` — the pull request
 is still open, and dotcl compiles that branch into the fasl it ships.
+
+`:upstream-host` says where *upstream* lives, and nothing else. A `:ref` fork is
+one of ours and is on GitHub under the `dotcl` organization whichever host
+upstream sits on, so it is fetched and checked as GitHub either way. `:gitlab`
+is a known host with no clone URL attached: the only GitLab entry is bundled and
+never fetched, and GitLab is not a single site the way github.com and
+codeberg.org are; an entry that needs cloning from one adds its instance to
+`*hosts*` deliberately.
 
 Prefer `:commit` in a `:ref`. A pinned commit makes a regenerated dist
 byte-identical, keeps unrelated upstream churn out of it, and means the only
@@ -118,7 +126,9 @@ public facts.
 - schema: required keys present, `:disposition` from the known vocabulary,
   `:ref` shape consistent with the disposition
 - with `gh` available: every `:pr` exists and its state agrees with
-  `:disposition`; every `:ref` fork and branch exists and is public
+  `:disposition`; every `:ref` fork and branch exists and is public. A `:pr` on
+  a `:codeberg` upstream is read the same way through Codeberg's Gitea API with
+  `curl`, which answers anonymously, with no token, and no weaker a check
 - inventory drift: repositories under the `dotcl` organization that no entry
   mentions are reported, so a fork cannot quietly diverge from the manifest
 

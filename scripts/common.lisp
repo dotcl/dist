@@ -5,7 +5,8 @@
   (:use #:cl)
   (:export #:load-manifest #:entries #:entry-value #:ref-repo #:ref-branch
            #:ref-tag #:ref-commit #:bundled-p #:dist-entries
-           #:manifest-path #:parse-pr))
+           #:manifest-path #:parse-pr
+           #:*hosts* #:entry-host #:repo-url #:entry-repo-url))
 
 (in-package #:dotcl-dist)
 
@@ -58,6 +59,41 @@ Everything except what dotcl bundles. An entry whose fix is already merged
 upstream still belongs here: the stock quicklisp dist keeps shipping the old
 version until it catches up, which is exactly what :retire-when describes."
   (remove-if #'bundled-p (entries manifest)))
+
+;;; ------------------------------------------------------------------
+;;; where a repository lives
+
+(defparameter *hosts*
+  '((:github . "https://github.com/~a.git")
+    (:codeberg . "https://codeberg.org/~a.git")
+    (:gitlab . nil))
+  "Known :upstream-host values, mapped to a clone URL template.
+
+:gitlab has no template on purpose. The one GitLab entry, asdf, is :bundled and
+so is never fetched, and GitLab is not one site the way github.com and
+codeberg.org are; an entry that needs cloning from one should add its instance
+here deliberately rather than inherit a guess.")
+
+(defun entry-host (entry)
+  "Where upstream lives. :github unless the entry says otherwise."
+  (entry-value entry :upstream-host :github))
+
+(defun repo-url (repo host)
+  (let ((template (cdr (assoc host *hosts*))))
+    (unless template
+      (error "no clone URL for ~a on ~s; add the host to *HOSTS*" repo host))
+    (format nil template repo)))
+
+(defun entry-repo-url (entry)
+  "Clone URL of the repository a release is built from.
+
+A :ref fork is one of ours and lives in the dotcl organization on GitHub
+whatever the upstream host is, so :upstream-host is consulted only when the ref
+is upstream itself."
+  (let ((fork (ref-repo (entry-value entry :ref))))
+    (if fork
+        (repo-url fork :github)
+        (repo-url (entry-value entry :upstream) (entry-host entry)))))
 
 (defun parse-pr (pr)
   "Split \"owner/repo#123\" into (values \"owner/repo\" 123), or NIL."

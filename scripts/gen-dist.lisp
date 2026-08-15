@@ -15,6 +15,11 @@
 ;;;; published keeps that version's URL, so only the new ones are uploaded —
 ;;;; see PUBLISHED-ARCHIVE-URLS.
 
+;;;; asdf is required rather than assumed: the .asd reading below needs it, and
+;;;; a dotcl script starts without it, so running this the way the README says
+;;;; otherwise dies on the first UIOP call.
+(require "asdf")
+
 (load (merge-pathnames "common.lisp" (or *load-truename* *default-pathname-defaults*)))
 
 (in-package #:dotcl-dist)
@@ -71,8 +76,6 @@ a dist generated from a half-failed command would be worse than none."
 ;;; ------------------------------------------------------------------
 ;;; resolving a :ref to a commit
 
-(defun repo-url (repo) (format nil "https://github.com/~a.git" repo))
-
 (defun entry-repo (entry)
   "The repository a release is built from: the fork when there is one,
 otherwise upstream itself."
@@ -82,8 +85,7 @@ otherwise upstream itself."
 (defun resolve-commit (entry)
   "Resolve this entry's :ref to a full commit SHA."
   (let* ((ref (entry-value entry :ref))
-         (repo (entry-repo entry))
-         (url (repo-url repo)))
+         (url (entry-repo-url entry)))
     (cond
       ((ref-commit ref) (ref-commit ref))
       ((ref-tag ref)
@@ -112,11 +114,10 @@ otherwise upstream itself."
 
 (defun checkout-dir (lib) (rooted (format nil "build/src/~a/" lib)))
 
-(defun fetch-repo (lib repo commit)
-  "A working tree of REPO checked out at COMMIT. Incremental: the clone is
+(defun fetch-repo (lib url commit)
+  "A working tree of URL checked out at COMMIT. Incremental: the clone is
 kept between runs and only the missing commit is fetched."
-  (let ((dir (checkout-dir lib))
-        (url (repo-url repo)))
+  (let ((dir (checkout-dir lib)))
     (ensure-directories-exist dir)
     (unless (probe-file (merge-pathnames ".git/HEAD" dir))
       (run "git" "init" "--quiet" (native dir)))
@@ -325,9 +326,10 @@ versions point into it."
     (dolist (entry entries)
       (let* ((lib (entry-value entry :lib))
              (repo (entry-repo entry))
+             (url (entry-repo-url entry))
              (commit (resolve-commit entry)))
         (format *error-output* "~&;; ~a ~a @ ~a~%" lib repo (short-sha commit))
-        (let* ((checkout (fetch-repo lib repo commit))
+        (let* ((checkout (fetch-repo lib url commit))
                (prefix (release-prefix lib checkout commit))
                (tarball (build-tarball lib checkout commit prefix))
                (bytes (file-bytes tarball)))
