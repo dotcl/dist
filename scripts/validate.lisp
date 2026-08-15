@@ -52,6 +52,8 @@
           (pr (entry-value entry :pr)))
       (unless (member disposition *dispositions*)
         (fail "~a: unknown :disposition ~s" lib disposition))
+      (unless (assoc (entry-host entry) *hosts*)
+        (fail "~a: unknown :upstream-host ~s" lib (entry-host entry)))
       ;; :ref shape must match what the disposition claims.
       (case disposition
         (:upstream-merged
@@ -77,27 +79,65 @@
   (multiple-value-bind (out ok) (run-command "gh" (list "api" endpoint "-q" field))
     (when ok (string-trim '(#\Space #\Newline #\Return) out))))
 
+(defun codeberg-json (endpoint)
+  "Raw JSON from Codeberg's Gitea API, or NIL when the request failed.
+
+No token and no gh equivalent: Codeberg answers these reads anonymously, and
+curl -sf exits non-zero on a 404, which is exactly the signal RUN-COMMAND
+reports."
+  (multiple-value-bind (out ok)
+      (run-command "curl" (list "-sf" (format nil "https://codeberg.org/api/v1/~a" endpoint)))
+    (when ok out)))
+
+(defun pr-state (host repo number)
+  "(values \"open\"|\"closed\" MERGED-P) for a pull request, NIL if unreadable.
+
+Merged is returned separately rather than folded into the string. An earlier
+version reported \"closed/unmerged\" and tested it with (SEARCH \"merged\" ...),
+which is true of \"unmerged\" as well, so an unmerged pull request satisfied
+:upstream-merged and the check passed."
+  (case host
+    (:github
+     (let ((out (gh-json (format nil "repos/~a/pulls/~d" repo number)
+                         ".state + \"/\" + (.merged|tostring)")))
+       (when out
+         (values (subseq out 0 (position #\/ out))
+                 (and (search "/true" out) t)))))
+    (:codeberg
+     ;; Gitea's pull payload carries "state" and "merged" exactly once each:
+     ;; merged_at and merged_by are distinct keys, and no nested object repeats
+     ;; either. So a substring test is enough, and this needs neither jq nor a
+     ;; JSON parser.
+     (let ((json (codeberg-json (format nil "repos/~a/pulls/~d" repo number))))
+       (when json
+         (values (if (search "\"state\":\"open\"" json) "open" "closed")
+                 (and (search "\"merged\":true" json) t)))))))
+
 (defun check-pr (entry)
   (let ((lib (entry-value entry :lib))
         (pr (entry-value entry :pr))
+        (host (entry-host entry))
         (disposition (entry-value entry :disposition)))
     (when pr
       (multiple-value-bind (repo number) (parse-pr pr)
         (when (and repo number)
-          (let ((state (gh-json (format nil "repos/~a/pulls/~d" repo number)
-                                ".state + \"/\" + (if .merged then \"merged\" else \"unmerged\" end)")))
+          (multiple-value-bind (state merged) (pr-state host repo number)
             (cond
+              ((not (member host '(:github :codeberg)))
+               (fail "~a: :pr ~a is on ~s, which this check cannot read" lib pr host))
               ((null state)
-               (fail "~a: cannot read PR ~a (gone, private, or gh unavailable)" lib pr))
-              ((and (eq disposition :upstream-merged)
-                    (not (search "merged" state)))
-               (fail "~a: :upstream-merged but PR ~a is ~a" lib pr state))
+               (fail "~a: cannot read PR ~a (gone, private, or the client is unavailable)"
+                     lib pr))
+              ((and (eq disposition :upstream-merged) (not merged))
+               (fail "~a: :upstream-merged but PR ~a is ~a and unmerged" lib pr state))
               ((and (eq disposition :upstream-pr-open)
-                    (not (search "open" state)))
+                    (not (string= state "open")))
                (fail "~a: :upstream-pr-open but PR ~a is ~a — promote or retire the entry"
                      lib pr state)))))))))
 
 (defun check-ref (entry)
+  "Check the fork a :ref names. GitHub only, and deliberately so: a :ref fork is
+one of ours and lives in the dotcl organization, whatever host upstream is on."
   (let* ((lib (entry-value entry :lib))
          (ref (entry-value entry :ref))
          (repo (ref-repo ref))
