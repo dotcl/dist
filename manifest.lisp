@@ -185,6 +185,32 @@
            signal yet, so the whole branch is skipped. It is in the patch because the
            day dotcl signals there, cl-fad would stop loading without it.")
 
+  (:lib "float-features"
+   :upstream "shinmera/float-features"
+   :upstream-host :codeberg
+   :disposition :upstream-merged
+   :ref :upstream-default
+   :pr "shinmera/float-features#40"
+   :retire-when "a quicklisp dist ships a float-features that includes PR 40"
+   :notes "PR 40 merged 2026-08-13: reader conditionals in float-features.lisp and
+           infinity.lisp, plus one .asd line, and no new source file.
+
+           The primitives are not in the library. They are dotcl-float, a contrib
+           shipped inside dotcl releases since 0.1.23, which reaches
+           System.BitConverter through dotnet:static; the .asd pulls it in with
+           (:feature :dotcl (:require :dotcl-float)). So nothing here needs a fork,
+           and nothing dotcl-side needs carrying.
+
+           WITH-FLOAT-TRAPS-MASKED lands in the portable no-op branch. Masking is
+           the right answer on .NET, which does not trap, but the three tests that
+           want an unmasked trap to be observable fail: 31 pass, 3 fail.
+           WITH-ROUNDING-MODE still signals \"Implementation not supported\" -
+           managed .NET exposes no rounding mode to bind.
+
+           This is the first entry whose upstream is not on GitHub, which is what
+           :upstream-host :codeberg is for. Loading it on dotcl also wants the
+           trivial-features this dist carries, until that entry retires.")
+
   (:lib "usocket"
    :upstream "usocket/usocket"
    :disposition :fork-only
