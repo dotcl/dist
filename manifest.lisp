@@ -19,7 +19,7 @@
  ;; libraries carried for dotcl, so the inventory check does not expect them
  ;; here. Only public repositories belong in this list — the check itself
  ;; looks at public repositories only.
- :inventory-ignore ("dotcl" "playa" "paalam" "dist")
+ :inventory-ignore ("dotcl" "playa" "paalam" "playground" "dist")
  :criteria
  "An entry is listed once the dotcl support code has a public home: a pull
   request filed upstream (open or merged), a source shipped inside a dotcl
