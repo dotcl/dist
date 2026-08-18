@@ -213,10 +213,10 @@
 
   (:lib "usocket"
    :upstream "usocket/usocket"
-   :disposition :fork-only
+   :disposition :upstream-pr-open
    :ref ("dotcl/usocket" :branch "dotcl")
-   :pr nil
-   :retire-when "an upstream PR merges and reaches the stock distribution"
+   :pr "usocket/usocket#144"
+   :retire-when "PR 144 merges and a quicklisp dist ships the merged version"
    :notes "A backend on System.Net.Sockets: TCP client and server, UDP, name
            lookup, and WAIT-FOR-INPUT over Socket.Select. Stock usocket loads on
            dotcl and does nothing, since the portable layer is all it has and
@@ -230,4 +230,6 @@
            connect that failed while its task was awaited in an
            AggregateException -- so the InnerException chain is walked.
 
-           Upstream PR not filed yet; upstream has been quiet since 2026-05.")))
+           PR 144 filed 2026-08-19: one new file, four #+dotcl clauses in
+           option.lisp and one .asd entry, with no existing backend touched.
+           Upstream has been quiet since 2026-05.")))
