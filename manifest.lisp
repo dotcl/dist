@@ -31,7 +31,6 @@
    :disposition :upstream-merged
    :ref :upstream-default
    :pr "trivial-gray-streams/trivial-gray-streams#18"
-   :fork-status (:redundant "dotcl/trivial-gray-streams:dotcl — merged upstream, kept only until the entry retires")
    :retire-when "a quicklisp dist ships a tgs that includes the file-position bridge (PR 18) and dotcl pulls stock"
    :notes "Two upstream changes, both merged. PR 17 adds :dotcl to the gray-streams backend selection (2026-07-13). PR 18 bridges dotcl-gray:stream-file-position to tgs's own generic function (2026-07-24); :pr names it because it is the binding one — dotcl no longer special-cases the tgs package in FILE-POSITION, so a tgs without PR 18 reports NIL there.")
 
@@ -99,7 +98,6 @@
    :disposition :upstream-merged
    :ref :upstream-default
    :pr "trivial-features/trivial-features#25"
-   :fork-status (:redundant "dotcl/trivial-features:dotcl - merged upstream, kept only until the entry retires")
    :retire-when "a quicklisp dist ships a trivial-features that includes dotcl in the guard"
    :notes "PR 25 merged 2026-08-11 as one line: dotcl joins the
            supported-implementations guard, and there is no backend file.
@@ -170,7 +168,6 @@
    :disposition :upstream-merged
    :ref :upstream-default
    :pr "edicl/cl-fad#40"
-   :fork-status (:redundant "dotcl/cl-fad:dotcl - merged upstream, kept only until the entry retires")
    :retire-when "a quicklisp dist ships a cl-fad that includes PR 40"
    :notes "PR 40 merged 2026-08-13, unchanged. Four reader conditionals, no new code. LIST-DIRECTORY joins the CMUCL and
            SCL group rather than the ECL and Clasp one: on dotcl a \"*.*\" wildcard

@@ -70,7 +70,7 @@ Each entry is a plist:
 | `:ref` | where the dotcl support code lives *now* — `:upstream-default`, or `("owner/repo" :branch "name" \| :tag "name" \| :commit "sha")` |
 | `:bundled` | `t` when dotcl ships the library itself, so it needs no dist release |
 | `:pr` | upstream pull request, as `owner/repo#number`, or `nil` |
-| `:fork-status` | tracks a fork that has outlived its purpose, e.g. `(:redundant "…")` |
+| `:fork-status` | tracks a fork that has outlived its purpose but is still there, e.g. `(:redundant "…")`. Deleting the fork removes the key |
 | `:retire-when` | the condition under which this entry is deleted |
 | `:notes` | prose: what the patch does, anything a reader would otherwise have to guess |
 
@@ -114,6 +114,14 @@ stays or retires.
 **Retirement is deletion.** When `:retire-when` is satisfied, the entry is
 removed in a commit that says why. The manifest never grows a "formerly
 needed" section.
+
+**A fork retires at the merge, the entry at the dist.** Those are two clocks and
+they run at different speeds. When the upstream pull request merges, the support
+code has a new home and our fork owns nothing: `:ref` becomes
+`:upstream-default`, so the dist is already built from upstream. The fork is
+deleted at that point and its `:fork-status` goes with it. The entry stays until
+a stock distribution ships the merged version, because until then a dotcl user
+pulling stock still gets a source without the support code.
 
 **Public identifiers only.** Everything in this repository — manifest, commit
 messages, issues — refers to public pull requests, public repositories, and
