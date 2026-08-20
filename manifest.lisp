@@ -120,16 +120,20 @@
 
   (:lib "trivial-garbage"
    :upstream "trivial-garbage/trivial-garbage"
-   :disposition :fork-only
+   :disposition :upstream-pr-open
    :ref ("dotcl/trivial-garbage" :branch "dotcl")
-   :pr nil
-   :retire-when "an upstream PR merges and reaches the stock distribution"
+   :pr "trivial-garbage/trivial-garbage#26"
+   :retire-when "PR 26 merges and a quicklisp dist ships the merged version"
    :notes "Weak pointers, weak hash-tables and finalizers on dotcl's own
            facilities: System.WeakReference, MAKE-HASH-TABLE :weakness for all
            four weakness kinds, and real GC finalizers. Without this the stock
            .asd refuses to load at all, because its supported-implementation
            guard signals an error on an unknown host. Upstream test suite
-           passes, 11 of 11. Upstream PR not filed yet.")
+           passes, 11 of 11.
+
+           PR 26 filed 2026-08-20: reader conditionals only, no new file, in the
+           shape of the Mezzano and Genera additions. Upstream has been quiet
+           since 2023-10, so the merge is the slow part, not the patch.")
 
   (:lib "bordeaux-threads"
    :upstream "sionescu/bordeaux-threads"
