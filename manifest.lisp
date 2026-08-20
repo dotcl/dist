@@ -70,18 +70,22 @@
    :bundled t
    :ref ("dotcl/asdf" :branch "dotcl-0.1.21")
    :pr nil
+   :submission (:url "https://gitlab.common-lisp.net/asdf/asdf/-/merge_requests/252"
+                :state :open
+                :verifiable nil
+                :checked "2026-08-20")
    :retire-when "the upstream merge request lands and dotcl stops vendoring asdf"
    :notes "Shipped inside dotcl releases as a precompiled fasl, so the branch here is
            what a source build clones. dotcl-0.1.21 is the current compatibility
            generation, updated in place; a new dotcl-X.Y.Z branch is cut only on the
            next hard incompatibility, and older branches stay frozen for older
-           releases. The upstream project lives on GitLab, where a merge request is
-           filed and waiting for review:
-           https://gitlab.common-lisp.net/asdf/asdf/-/merge_requests/252. It carries
-           the uiop OS-abstraction subset — getenv/quit/argv, run-program,
-           raw-command-line-arguments, package-local-nicknames, getcwd,
-           *unspecific-pathname-type* — and the branch shipped here has grown past it
-           since, so that merge landing would not on its own retire this entry.")
+           releases. The upstream project lives on GitLab behind a bot challenge this
+           checker cannot read, so the merge request is recorded in :submission
+           rather than :pr. It carries the uiop OS-abstraction subset --
+           getenv/quit/argv, run-program, raw-command-line-arguments,
+           package-local-nicknames, getcwd, *unspecific-pathname-type* -- and the
+           branch shipped here has grown past it since, so that merge landing would
+           not on its own retire this entry.")
 
   (:lib "cffi"
    :upstream "cffi/cffi"

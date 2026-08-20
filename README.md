@@ -69,7 +69,8 @@ Each entry is a plist:
 | `:disposition` | see below |
 | `:ref` | where the dotcl support code lives *now* — `:upstream-default`, or `("owner/repo" :branch "name" \| :tag "name" \| :commit "sha")` |
 | `:bundled` | `t` when dotcl ships the library itself, so it needs no dist release |
-| `:pr` | upstream pull request, as `owner/repo#number`, or `nil` |
+| `:pr` | upstream pull request this checker can read, as `owner/repo#number`, or `nil` |
+| `:submission` | something filed where the state cannot be read automatically: `(:url "…" :state :open \| :merged \| :closed \| :withdrawn :verifiable nil :checked "YYYY-MM-DD")`. Use instead of `:pr`, never both |
 | `:fork-status` | tracks a fork that has outlived its purpose but is still there, e.g. `(:redundant "…")`. Deleting the fork removes the key |
 | `:retire-when` | the condition under which this entry is deleted |
 | `:notes` | prose: what the patch does, anything a reader would otherwise have to guess |
@@ -133,6 +134,11 @@ public facts.
 
 - schema: required keys present, `:disposition` from the known vocabulary,
   `:ref` shape consistent with the disposition
+- submission freshness (no network needed, which is the point): a `:submission`
+  that is still `:open` goes stale 30 days after its `:checked` date, so an
+  unverifiable claim has to be looked at again rather than quietly aged. An
+  earlier "waiting for account approval" note lived in `:notes` for seven weeks
+  past the approval and survived an audit, because prose has no expiry
 - with `gh` available: every `:pr` exists and its state agrees with
   `:disposition`; every `:ref` fork and branch exists and is public. A `:pr` on
   a `:codeberg` upstream is read the same way through Codeberg's Gitea API with
