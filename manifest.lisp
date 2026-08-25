@@ -131,11 +131,13 @@
            guard signals an error on an unknown host. Upstream test suite
            passes, 11 of 11.
 
-           PR 26 merged 2026-08-22, unchanged: reader conditionals only, no new
-           file, in the shape of the Mezzano and Genera additions. The merge
-           commit 2f293dd is upstream's master head and its tree is identical to
-           the fork branch it came from, so the dist builds the same source from
-           upstream.")
+           PR 26 merged 2026-08-22: reader conditionals only, no new file, in
+           the shape of the Mezzano and Genera additions. The patch went in as
+           filed but rebased -- CL-Amiga support merged a day earlier and both
+           add a keyword to the same (or ...) lists -- so the fork branch was
+           rebuilt on upstream, 2bb976d to baf04e7, and the source the dist ships
+           now carries CL-Amiga as well. The merge commit 2f293dd is upstream's
+           master head and its tree is identical to that fork branch.")
 
   (:lib "bordeaux-threads"
    :upstream "sionescu/bordeaux-threads"
