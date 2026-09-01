@@ -241,4 +241,48 @@
 
            PR 144 filed 2026-08-19: one new file, four #+dotcl clauses in
            option.lisp and one .asd entry, with no existing backend touched.
-           Upstream has been quiet since 2026-05.")))
+                   Upstream has been quiet since 2026-05.")
+
+  (:lib "slime"
+   :upstream "slime/slime"
+   :disposition :fork-only
+   :ref ("dotcl/slime" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream PR merges and reaches the stock distribution"
+   :notes "SLIME's swank on dotcl. swank/dotcl.lisp implements the backend
+           interfaces on the contrib modules a dotcl release ships: dotcl-socket
+           for sockets, dotcl-thread for threads and locks, dotcl-gray for Gray
+           streams. The file requires those itself rather than declaring them in
+           the system definition, because swank-loader compiles it directly, and
+           swank/gray needs the Gray package to exist by the time it is compiled.
+
+           Sixty interfaces, which is what SLIME needs to attach, evaluate,
+           complete, inspect and report conditions. The rest fall back on the
+           portable defaults, so an interface that is not here fails as an
+           unsupported operation rather than as an error at load time. ARGLIST
+           reads dotcl:FUNCTION-LAMBDA-LIST in the ECL backend's two-value
+           shape, so a name whose lambda list was never recorded reports
+           :not-available rather than being shown as taking no arguments; that
+           symbol is external since dotcl 0.1.26. Built-ins, (setf foo) names
+           and anonymous lambdas still fall back.
+
+           The branch is one commit on upstream master and touches no existing
+           backend: the wiring is *sysdep-files*, *implementation-features* and
+           lisp-version-string. Upstream PR not filed yet.")
+
+  (:lib "sly"
+   :upstream "joaotavora/sly"
+   :disposition :fork-only
+   :ref ("dotcl/sly" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream PR merges and reaches the stock distribution"
+   :notes "The same backend as the slime entry, against SLY's slynk:
+           slynk/backend/dotcl.lisp on dotcl-socket, dotcl-thread and dotcl-gray,
+           with slynk-loader's *sysdep-files* loading it ahead of slynk-gray. The
+           two files are near identical because slynk is a fork of swank; they
+           are separate entries because the two distributions ship separately and
+           either upstream can move without the other.
+
+           Sixty interfaces, ARGLIST included, on the same terms as the slime
+           entry. One commit on upstream master, no existing backend touched.
+           Upstream PR not filed yet.")))
