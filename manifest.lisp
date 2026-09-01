@@ -245,10 +245,10 @@
 
   (:lib "slime"
    :upstream "slime/slime"
-   :disposition :fork-only
+   :disposition :upstream-pr-open
    :ref ("dotcl/slime" :branch "dotcl")
-   :pr nil
-   :retire-when "an upstream PR merges and reaches the stock distribution"
+   :pr "slime/slime#941"
+   :retire-when "PR 941 merges and a quicklisp dist ships the merged version"
    :notes "SLIME's swank on dotcl. swank/dotcl.lisp implements the backend
            interfaces on the contrib modules a dotcl release ships: dotcl-socket
            for sockets, dotcl-thread for threads and locks, dotcl-gray for Gray
@@ -268,14 +268,14 @@
 
            The branch is one commit on upstream master and touches no existing
            backend: the wiring is *sysdep-files*, *implementation-features* and
-           lisp-version-string. Upstream PR not filed yet.")
+           lisp-version-string. PR 941 filed 2026-09-01.")
 
   (:lib "sly"
    :upstream "joaotavora/sly"
-   :disposition :fork-only
+   :disposition :upstream-pr-open
    :ref ("dotcl/sly" :branch "dotcl")
-   :pr nil
-   :retire-when "an upstream PR merges and reaches the stock distribution"
+   :pr "joaotavora/sly#717"
+   :retire-when "PR 717 merges and a quicklisp dist ships the merged version"
    :notes "The same backend as the slime entry, against SLY's slynk:
            slynk/backend/dotcl.lisp on dotcl-socket, dotcl-thread and dotcl-gray,
            with slynk-loader's *sysdep-files* loading it ahead of slynk-gray. The
@@ -285,4 +285,4 @@
 
            Sixty interfaces, ARGLIST included, on the same terms as the slime
            entry. One commit on upstream master, no existing backend touched.
-           Upstream PR not filed yet.")))
+           PR 717 filed 2026-09-01.")))
