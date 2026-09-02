@@ -245,10 +245,10 @@
 
   (:lib "slime"
    :upstream "slime/slime"
-   :disposition :upstream-pr-open
-   :ref ("dotcl/slime" :branch "dotcl")
+   :disposition :upstream-merged
+   :ref :upstream-default
    :pr "slime/slime#941"
-   :retire-when "PR 941 merges and a quicklisp dist ships the merged version"
+   :retire-when "a quicklisp dist ships a slime that includes PR 941"
    :notes "SLIME's swank on dotcl. swank/dotcl.lisp implements the backend
            interfaces on the contrib modules a dotcl release ships: dotcl-socket
            for sockets, dotcl-thread for threads and locks, dotcl-gray for Gray
@@ -266,9 +266,14 @@
            symbol is external since dotcl 0.1.26. Built-ins, (setf foo) names
            and anonymous lambdas still fall back.
 
-           The branch is one commit on upstream master and touches no existing
-           backend: the wiring is *sysdep-files*, *implementation-features* and
-           lisp-version-string. PR 941 filed 2026-09-01.")
+           One commit, touching no existing backend: the wiring is *sysdep-files*,
+           *implementation-features* and lisp-version-string.
+
+           PR 941 merged 2026-09-01, unchanged. Upstream master head 4a5b4fb is that
+           commit and its tree is identical to the fork branch dist 2026-09-01 shipped,
+           so the source does not change; only the tarball prefix does. The fork owns
+           nothing now and retires with the merge; the entry stays until a stock
+           distribution ships it.")
 
   (:lib "sly"
    :upstream "joaotavora/sly"
