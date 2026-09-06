@@ -95,7 +95,21 @@
    :retire-when "an upstream PR merges and reaches the stock distribution"
    :notes "CFFI-SYS backend for dotcl. OS-independent: the platform and the C long
            size are resolved at run time rather than at read time, so one source
-           works on Windows (LLP64) and Unix (LP64). Upstream PR not filed yet.")
+           works on Windows (LLP64) and Unix (LP64).
+
+           %LOAD-FOREIGN-LIBRARY signals a SIMPLE-ERROR when a library fails to
+           load. That is a contract of libraries.lisp rather than of any backend:
+           LOAD-FOREIGN-LIBRARY-PATH retries against *FOREIGN-LIBRARY-DIRECTORIES*
+           only for that condition, and dotcl surfaces a missing DLL as a CLR
+           PROGRAM-ERROR, so the search never ran and a library named without a
+           directory loaded only when the OS happened to find it. The upstream
+           source carries a FIXME saying it never checked that every host signals
+           the right condition. With the clause the test suite goes from 136
+           failures of 308 to 9; the nine that remain are pointer representation
+           and :void questions, not loading. Measured on dotcl 0.1.27, ARM64
+           Windows, with the fsbv, grovel and test-asdf files left out.
+
+           Upstream PR not filed yet.")
 
   (:lib "trivial-features"
    :upstream "trivial-features/trivial-features"
