@@ -111,6 +111,22 @@
 
            Upstream PR not filed yet.")
 
+  (:lib "trivial-cltl2"
+   :upstream "Zulu-Inuoe/trivial-cltl2"
+   :disposition :fork-only
+   :ref ("dotcl/trivial-cltl2" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream PR merges and reaches the stock distribution"
+   :notes "One line: DOTCL-CLTL2 joins the :use list of the trivial-cltl2 package,
+           next to the other implementations' CLtL2 packages. Without it the
+           eight names are exported but undefined on dotcl, so DEFINE-DECLARATION
+           compiles as a plain call and trivia fails to load with an unbound
+           variable. dotcl's backend answers every introspection call with
+           \"no information\"; callers that ask for optimization hints get NIL
+           and emit correct, unoptimized code. Measured 2026-09-15: trivia and
+           the 21 systems that load it through serapeum go from failing to
+           loading with this entry alone.")
+
   (:lib "trivial-features"
    :upstream "trivial-features/trivial-features"
    :disposition :upstream-merged

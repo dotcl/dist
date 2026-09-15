@@ -33,6 +33,21 @@ hand:
 dotcl scripts/gen-dist.lisp        # version defaults to today's date
 ```
 
+Reading the `.asd` files needs their `:defsystem-depends-on` targets visible to
+asdf. Today that is only alexandria (cffi-libffi, cffi-tests and
+trivial-features-tests ask for it), and the generator does not load quicklisp
+because the quicklisp searcher shadows dist checkouts (sly's own systems
+disappeared when it was loaded). Point `CL_SOURCE_REGISTRY` at an alexandria
+checkout instead:
+
+```sh
+CL_SOURCE_REGISTRY=/path/to/alexandria/ dotcl scripts/gen-dist.lisp
+```
+
+The run is right when `systems.txt` differs from the previous version only by
+the entries you changed; `diff <(sort docs/dotcl/<prev>/systems.txt) <(sort docs/dotcl/<new>/systems.txt)`
+is the check.
+
 It writes the dist index under `docs/` — served by GitHub Pages, so the
 subscription URL is `https://dotcl.github.io/dist/dotcl.txt` — and the release
 tarballs under `build/`, which belong in the GitHub Release named
