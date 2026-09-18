@@ -183,6 +183,98 @@
            a lock with a :timeout is the one gap and signals NOT-IMPLEMENTED.
            Both upstream test suites pass. Upstream PR not filed yet.")
 
+  (:lib "atomics"
+   :upstream "shinmera/atomics"
+   :upstream-host :codeberg
+   :disposition :fork-only
+   :ref ("dotcl/atomics" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream PR merges and reaches the stock distribution"
+   :notes "Reader conditionals only, in one file, in the shape of the CL-Amiga
+           addition that landed just before it: #+dotcl arms on CAS, ATOMIC-INCF
+           and ATOMIC-DECF, and dotcl added to the six CAS-place features it
+           supports. ATOMIC-PUSH and ATOMIC-POP already have a generic CAS-based
+           fallback and need nothing.
+
+           CAS compares with EQL rather than the EQ the other arms use, because
+           dotcl boxes its numbers: an EQ test would make a CAS on a counter stop
+           swapping once its value left the small-integer cache. The underlying
+           DOTCL:COMPARE-AND-SWAP is lock-based (one global monitor) and so
+           correct but not lock-free; a single 64-bit counter is better served by
+           dotcl's own atomic-long.
+
+           Without this atomics signals IMPLEMENTATION-NOT-SUPPORTED at load and
+           sento cannot load at all. Upstream moved from GitHub to Codeberg in
+           August 2025 and says patches go there, which is what
+           :upstream-host :codeberg is for; the fork branch is built on Codeberg
+           master. Upstream PR not filed yet.")
+
+  (:lib "metatilities-base"
+   :upstream "hraban/metatilities-base"
+   :disposition :fork-only
+   :ref ("dotcl/metatilities-base" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream PR merges and reaches the stock distribution"
+   :notes "Two reader-conditional keys, no new file. The WITHOUT-INTERRUPTS
+           :IMPORT-FROM picks its package specifier by feature, and an
+           implementation matching none of them is left importing nothing from a
+           package named WITHOUT-INTERRUPTS: DEFPACKAGE fails before any of the
+           library runs. dotcl joins CLISP on the side that defines the macro
+           locally, which expands to PROGN.
+
+           That trades atomicity for loading, exactly as it already does on
+           CLISP. The use in this library is the priority queue's critical
+           section. dotcl has no WITHOUT-INTERRUPTS to offer instead: its
+           interrupts are delivered at safepoints, and a real one is a design
+           question of its own rather than a line in a manifest.
+
+           This entry is why five other systems load. cl-containers, cl-markdown
+           and the rest reach the broken DEFPACKAGE through this dependency, not
+           through any code of their own.")
+
+  (:lib "cl+ssl"
+   :upstream "cl-plus-ssl/cl-plus-ssl"
+   :disposition :fork-only
+   :ref ("dotcl/cl-plus-ssl" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream PR merges and reaches the stock distribution"
+   :notes "One form in reload.lisp, and nothing in it is dotcl-specific. The
+           Windows library-name list knew the OpenSSL 3 and 1.1 DLLs only under
+           the -x64 suffix, guarded by #+x86-64, and the x86 names under #+x86,
+           so on a 64-bit ARM host every modern name read away and only
+           libeay32.dll (OpenSSL 1.0) was left. The suffix is a convention of one
+           Windows distribution, not of OpenSSL: MSYS2 clangarm64, vcpkg and
+           conda ship libcrypto-3.dll and libssl-3.dll unsuffixed. The patch
+           replaces the x86-only arms with unconditional trailing candidates, so
+           x86-64 keeps its order and x86 ends up with the list it had; a
+           candidate of the wrong machine type costs nothing because :or wraps
+           each attempt in ignore-errors.
+
+           Measured 2026-09-18 on ARM64 Windows with the MSYS2 clangarm64
+           OpenSSL: stock cl+ssl fails to load, this branch loads.")
+
+
+  (:lib "mmap"
+   :upstream "shinmera/mmap"
+   :upstream-host :codeberg
+   :disposition :fork-only
+   :ref ("dotcl/mmap" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream PR merges and reaches the stock distribution"
+   :notes "One form in windows.lisp, and nothing in it is dotcl-specific. The
+           Windows size_t was sized by #+x86-64 / #+x86, so on a 64-bit ARM host
+           both arms read away and CFFI is handed a type with no base type; the
+           file does not compile on any Windows ARM64 implementation. posix.lisp
+           in the same library already asks #+64-bit / #+32-bit, which is the
+           question that was meant, so the patch is windows.lisp catching up to
+           its sibling.
+
+           On x64 Windows the stock library loads unchanged; this entry only
+           matters on ARM64. Upstream moved from GitHub to Codeberg in August
+           2025 and the line is unfixed there too, so the fork branch is built on
+           Codeberg master.")
+
+
   (:lib "dexador"
    :upstream "fukamachi/dexador"
    :disposition :upstream-pr-open

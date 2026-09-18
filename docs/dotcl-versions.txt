@@ -9,3 +9,4 @@
 2026-09-03 https://dotcl.github.io/dist/dotcl/2026-09-03/distinfo.txt
 2026-09-07 https://dotcl.github.io/dist/dotcl/2026-09-07/distinfo.txt
 2026-09-15 https://dotcl.github.io/dist/dotcl/2026-09-15/distinfo.txt
+2026-09-18 https://dotcl.github.io/dist/dotcl/2026-09-18/distinfo.txt
