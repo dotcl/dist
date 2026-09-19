@@ -34,6 +34,23 @@
    :retire-when "a quicklisp dist ships a tgs that includes the file-position bridge (PR 18) and dotcl pulls stock"
    :notes "Two upstream changes, both merged. PR 17 adds :dotcl to the gray-streams backend selection (2026-07-13). PR 18 bridges dotcl-gray:stream-file-position to tgs's own generic function (2026-07-24); :pr names it because it is the binding one — dotcl no longer special-cases the tgs package in FILE-POSITION, so a tgs without PR 18 reports NIL there.")
 
+  (:lib "flexi-streams"
+   :upstream "edicl/flexi-streams"
+   :disposition :fork-only
+   :ref ("dotcl/flexi-streams" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream pull request merges and a quicklisp dist ships the merged version"
+   :notes "Reads an astral code point as a surrogate pair and writes a pair back as
+           the code point, on a host whose CHAR-CODE-LIMIT is #x10000. Not
+           dotcl-specific: measured on ABCL 1.9.3, where CODE-CHAR truncates and
+           U+242EE was read as U+42EE. cl-unicode cannot build its tables without
+           it - the generator reads NormalizationTest.txt through flexi and the
+           line carrying U+242EE broke. Quicklisp takes flexi-streams from
+           edicl/flexi-streams git HEAD (quicklisp-projects calls that source
+           ediware-http, which despite the name is a git-source templated on
+           https://github.com/edicl/~A.git), so a merge reaches the next dist
+           directly.")
+
   (:lib "micros"
    :upstream "lem-project/micros"
    :disposition :upstream-pr-open
