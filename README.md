@@ -58,8 +58,27 @@ the commit it came from and its bytes are reproducible, so a file that has been
 uploaded once never needs a second home. Generation reads the `releases.txt` of
 every version already under `docs/` and reuses the URL found there, so a version
 that changes one library leaves the other entries pointing at the releases that
-already hold them. `git status` after generating shows which files in `build/`
-are new; those are the ones to attach.
+already hold them. Generation ends by naming the files to attach:
+
+```
+;; 1 new tarball(s) to attach to release dist-2026-09-19
+;; UPLOAD: build/flexi-streams-20260919-561a40d.tar.gz
+```
+
+Take that list, not `git status`: `build/` is gitignored, so status shows
+nothing there. Reading it from status is how two tarballs went unattached in
+2026-09-15, leaving two URLs in `releases.txt` answering 404.
+
+Before uploading, check that the new tarballs load:
+
+```sh
+dotcl scripts/check-loadable.lisp
+```
+
+It loads the systems those tarballs define, on the dotcl running it, and exits
+non-zero if any of them fails - the libraries are carried for dotcl, so one that
+does not load on it is not ready to be published. Only the new ones are checked;
+a tarball published earlier has been through this already.
 
 The consequence is that a release can never be deleted, because later dist
 versions point into it.

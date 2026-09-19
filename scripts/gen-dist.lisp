@@ -24,8 +24,6 @@
 
 (in-package #:dotcl-dist)
 
-(defparameter *dist-name* "dotcl")
-
 (defparameter *base-url* "https://dotcl.github.io/dist"
   "Where the generated text is served from. Baked into every generated file,
 and the subscription URL is recorded inside each user's installed dist — so
@@ -35,22 +33,6 @@ changing it later forces everyone to re-install. Treat it as permanent.")
   "https://github.com/dotcl/dist/releases/download"
   "Release assets hold the tarballs: anonymous, stable, CDN-served, and they
 keep binaries out of the git history.")
-
-(defparameter *root*
-  ;; The name and type have to be dropped first: merging "../" against a file
-  ;; pathname keeps them, which silently yields .../build/src/<lib>/gen-dist.lisp.
-  ;;
-  ;; TRUENAME then resolves the "scripts/../" away. Opening files works either
-  ;; way, but listing a directory does not: given a path with an unresolved
-  ;; ".." in it, UIOP:SUBDIRECTORIES returns NIL rather than signalling, so a
-  ;; directory walk silently finds nothing.
-  (truename
-   (merge-pathnames "../"
-                    (make-pathname :name nil :type nil
-                                   :defaults (or *load-truename*
-                                                 *default-pathname-defaults*)))))
-
-(defun rooted (relative) (merge-pathnames relative *root*))
 
 ;;; ------------------------------------------------------------------
 ;;; shelling out
@@ -243,9 +225,6 @@ read-time conditionals and #. all mean the text is not the truth."
         (declare (ignore sec min hour))
         (format nil "~d-~2,'0d-~2,'0d" year month day))))
 
-(defun version-dir (version)
-  (rooted (format nil "docs/~a/~a/" *dist-name* version)))
-
 (defun write-distinfo (stream version)
   (format stream "name: ~a~%" *dist-name*)
   (format stream "version: ~a~%" version)
@@ -304,10 +283,15 @@ versions point into it."
                            (setf (gethash file urls) url))))))))
     urls))
 
+(defvar *new-tarballs* '()
+  "Tarballs this run has to upload: the ones no earlier releases.txt already
+names.  Everything else reuses the URL it was published under.")
+
 (defun archive-url (version prefix published)
   (let ((file (format nil "~a.tar.gz" prefix)))
     (or (gethash file published)
-        (format nil "~a/dist-~a/~a" *archive-base-url* version file))))
+        (progn (push file *new-tarballs*)
+               (format nil "~a/dist-~a/~a" *archive-base-url* version file)))))
 
 (defun generate ()
   (let* ((manifest (load-manifest))
@@ -408,6 +392,15 @@ versions point into it."
             (format s "~a~%" line)))))
     (format *error-output* "~&;; ~a releases, ~a systems → ~a~%"
             (length releases) (length systems) (native dir))
+    ;; build/ is gitignored, so `git status` shows nothing here and the upload
+    ;; step had no list to work from - two tarballs went unattached in
+    ;; 2026-09-15 and their URLs 404ed.  Say outright which files the release
+    ;; needs.
+    (let ((new (reverse *new-tarballs*)))
+      (format *error-output* ";; ~a new tarball(s) to attach to release dist-~a~%"
+              (length new) version)
+      (dolist (file new)
+        (format *error-output* ";; UPLOAD: build/~a~%" file)))
     (when *skipped-asds*
       (format *error-output*
               ";; ~a .asd file(s) skipped — the systems they define are NOT in this dist:~%~{;;   ~a~%~}"

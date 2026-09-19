@@ -6,9 +6,32 @@
   (:export #:load-manifest #:entries #:entry-value #:ref-repo #:ref-branch
            #:ref-tag #:ref-commit #:bundled-p #:dist-entries
            #:manifest-path #:parse-pr
-           #:*hosts* #:entry-host #:repo-url #:entry-repo-url))
+           #:*hosts* #:entry-host #:repo-url #:entry-repo-url
+           #:*root* #:rooted #:*dist-name* #:version-dir))
 
 (in-package #:dotcl-dist)
+
+
+(defparameter *dist-name* "dotcl")
+
+(defparameter *root*
+  ;; The name and type have to be dropped first: merging "../" against a file
+  ;; pathname keeps them, which silently yields .../build/src/<lib>/common.lisp.
+  ;;
+  ;; TRUENAME then resolves the "scripts/../" away. Opening files works either
+  ;; way, but listing a directory does not: given a path with an unresolved
+  ;; ".." in it, UIOP:SUBDIRECTORIES returns NIL rather than signalling, so a
+  ;; directory walk silently finds nothing.
+  (truename
+   (merge-pathnames "../"
+                    (make-pathname :name nil :type nil
+                                   :defaults (or *load-truename*
+                                                 *default-pathname-defaults*)))))
+
+(defun rooted (relative) (merge-pathnames relative *root*))
+
+(defun version-dir (version)
+  (rooted (format nil "docs/~a/~a/" *dist-name* version)))
 
 (defun manifest-path ()
   "Path of manifest.lisp, resolved relative to this script's directory."

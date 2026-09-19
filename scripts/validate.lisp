@@ -1,7 +1,7 @@
 ;;;; Validate manifest.lisp.
 ;;;;
 ;;;;   sbcl --script scripts/validate.lisp          ; schema only
-;;;;   LEDGER_CHECK_NETWORK=1 sbcl --script ...     ; + gh checks
+;;;;   LEDGER_CHECK_NETWORK=1 sbcl --script ...     ; + gh and release-asset checks
 ;;;;
 ;;;; Exits non-zero if anything fails, so CI can gate on it.
 
@@ -53,6 +53,55 @@ the upstream -- only for looking again and writing down what was seen.")
         (declare (ignore err))
         (values out (eql 0 code)))
     (error () (values "" nil))))
+
+
+;;; ------------------------------------------------------- published URLs
+
+;;; Every releases.txt ever written is kept, and later versions point into
+;;; earlier releases, so a release asset that goes missing breaks dist versions
+;;; nobody has touched since.  It has happened: two tarballs were not attached
+;;; in 2026-09-15 and the URLs naming them answered 404 until it was noticed by
+;;; hand.  Ask HTTP rather than trusting the file.
+(defun release-url-lines ()
+  "Every (version url) pair recorded under docs/, newest version last."
+  (loop for dir in (sort (directory (rooted (format nil "docs/~a/*/" *dist-name*)))
+                         #'string< :key #'namestring)
+        for file = (merge-pathnames "releases.txt" dir)
+        when (probe-file file)
+          append (let ((version (car (last (pathname-directory dir)))))
+                   (loop for line in (uiop:read-file-lines file)
+                         unless (or (zerop (length line)) (char= (char line 0) #\#))
+                           collect (list version
+                                         (let* ((start (1+ (position #\Space line)))
+                                                (end (position #\Space line :start start)))
+                                           (subseq line start end)))))))
+
+(defun url-ok-p (url)
+  ;; No -o: this runs curl directly rather than through a shell, so a
+  ;; /dev/null written here reaches a native Windows curl as a filename it
+  ;; cannot open - every URL then looks dead.  The headers -I prints go to
+  ;; stdout with the status code appended on its own line, which is the line
+  ;; read back.
+  (multiple-value-bind (out okp)
+      (run-command "curl" (list "-sIL" "-w" (format nil "~%%{http_code}~%") url))
+    (declare (ignore okp))
+    (let* ((lines (remove "" (uiop:split-string out :separator '(#\Newline #\Return))
+                          :test #'string=))
+           (code (car (last lines))))
+      (and code (string= "200" (string-trim " " code))))))
+
+(defun check-published-urls ()
+  "Every URL any published releases.txt names must still answer 200."
+  (let ((seen (make-hash-table :test 'equal))
+        (checked 0))
+    (dolist (pair (release-url-lines))
+      (destructuring-bind (version url) pair
+        (unless (gethash url seen)
+          (setf (gethash url seen) t)
+          (incf checked)
+          (unless (url-ok-p url)
+            (fail "dist ~a: release asset missing: ~a" version url)))))
+    (format t "~&checked ~d release URL~:p~%" checked)))
 
 ;;; ---------------------------------------------------------------- schema
 
@@ -261,7 +310,8 @@ could point at, and naming it here would publish its existence."
     (dolist (entry entries)
       (check-pr entry)
       (check-ref entry))
-    (check-inventory entries (getf (cdr manifest) :inventory-ignore)))
+    (check-inventory entries (getf (cdr manifest) :inventory-ignore))
+    (check-published-urls))
   (format t "~&checked ~d entr~:@p~@[ (with network checks)~]~%"
           (length entries) network)
   (if *problems*
