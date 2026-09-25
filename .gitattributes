@@ -1,0 +1,2 @@
+# Patch files are applied with git am and must reach it byte for byte.
+patches/** -text

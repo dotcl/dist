@@ -101,7 +101,8 @@ Each entry is a plist:
 | `:upstream` | `owner/repo` of the upstream project |
 | `:upstream-host` | `:github` (default), `:codeberg`, or `:gitlab` |
 | `:disposition` | see below |
-| `:ref` | where the dotcl support code lives *now* — `:upstream-default`, or `("owner/repo" :branch "name" \| :tag "name" \| :commit "sha")` |
+| `:ref` | where the dotcl support code lives *now* — `:upstream-default`, `("owner/repo" :branch "name" \| :tag "name" \| :commit "sha")`, or for a `:patched` entry `(:upstream :commit "sha")` |
+| `:patches` | `:patched` only: patch files under `patches/<lib>/`, applied in order on top of the `:ref` commit |
 | `:bundled` | `t` when dotcl ships the library itself, so it needs no dist release |
 | `:pr` | upstream pull request this checker can read, as `owner/repo#number`, or `nil` |
 | `:submission` | something filed where the state cannot be read automatically: `(:url "…" :state :open \| :merged \| :closed \| :withdrawn :verifiable nil :checked "YYYY-MM-DD")`. Use instead of `:pr`, never both |
@@ -116,6 +117,8 @@ Each entry is a plist:
 - `:upstream-pr-open` — pull request filed and pending
 - `:bundled-in-release` — shipped inside a dotcl release rather than pulled
 - `:fork-only` — public fork exists, no upstream pull request yet
+- `:patched` — patch files kept in this repository, applied to a pinned
+  upstream commit; no upstream pull request yet
 
 `:bundled` is a separate axis from `:disposition`: it says dotcl ships the
 library itself, which is independent of how the upstream conversation is going.
@@ -129,6 +132,19 @@ is a known host with no clone URL attached: the only GitLab entry is bundled and
 never fetched, and GitLab is not a single site the way github.com and
 codeberg.org are; an entry that needs cloning from one adds its instance to
 `*hosts*` deliberately.
+
+Codeberg-hosted libraries are built from the upstream commit plus patch files
+kept here, under `patches/<lib>/`, instead of from a fork. A `:patched` entry
+pins the upstream commit in `(:upstream :commit "sha")` and lists its patches
+in `:patches`; the patches are `git format-patch` output. `gen-dist` fetches
+that commit from the upstream host, applies the patches with `git am` using a
+fixed committer and the patch dates, and archives the resulting commit, so the
+tarball is as reproducible as any other and its name changes whenever a patch
+does. The commit is pinned rather than followed because a patch only applies to
+the tree it was made against. `gen-qlfile` emits nothing for these entries:
+qlot cannot apply patches, so use the dist. To move to a newer upstream commit,
+rebase the patches onto it, regenerate them with `git format-patch`, and update
+`:ref`.
 
 Prefer `:commit` in a `:ref`. A pinned commit makes a regenerated dist
 byte-identical, keeps unrelated upstream churn out of it, and means the only
@@ -168,6 +184,8 @@ public facts.
 
 - schema: required keys present, `:disposition` from the known vocabulary,
   `:ref` shape consistent with the disposition
+- patch files: every `:patches` file exists, and every file under `patches/`
+  is listed by an entry
 - submission freshness (no network needed, which is the point): a `:submission`
   that is still `:open` goes stale 30 days after its `:checked` date, so an
   unverifiable claim has to be looked at again rather than quietly aged. An

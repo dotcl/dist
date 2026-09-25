@@ -4,7 +4,7 @@
 (defpackage #:dotcl-dist
   (:use #:cl)
   (:export #:load-manifest #:entries #:entry-value #:ref-repo #:ref-branch
-           #:ref-tag #:ref-commit #:bundled-p #:dist-entries
+           #:ref-tag #:ref-commit #:bundled-p #:dist-entries #:entry-patches
            #:manifest-path #:parse-pr
            #:*hosts* #:entry-host #:repo-url #:entry-repo-url
            #:*root* #:rooted #:*dist-name* #:version-dir))
@@ -53,8 +53,9 @@ manifest itself, which is tagged with a leading :DIST."
   (getf entry key default))
 
 (defun ref-repo (ref)
-  "owner/repo of a :ref, or NIL when the ref is upstream itself."
-  (when (consp ref) (first ref)))
+  "owner/repo of a :ref fork, or NIL when the ref is upstream itself: either
+:UPSTREAM-DEFAULT or a pinned (:UPSTREAM :COMMIT \"sha\")."
+  (when (and (consp ref) (stringp (first ref))) (first ref)))
 
 (defun ref-branch (ref)
   (when (consp ref) (getf (rest ref) :branch)))
@@ -66,6 +67,11 @@ manifest itself, which is tagged with a leading :DIST."
   "A :ref pinned to an exact commit. Preferred over :branch: it makes a
 regenerated dist byte-identical and keeps unrelated upstream churn out."
   (when (consp ref) (getf (rest ref) :commit)))
+
+(defun entry-patches (entry)
+  "Patch files, relative to the repository root, applied in order on top of
+the pinned upstream commit of a :patched entry. NIL for every other entry."
+  (entry-value entry :patches))
 
 (defun bundled-p (entry)
   "True when dotcl ships this library itself, so nothing needs fetching.
@@ -112,7 +118,8 @@ here deliberately rather than inherit a guess.")
 
 A :ref fork is one of ours and lives in the dotcl organization on GitHub
 whatever the upstream host is, so :upstream-host is consulted only when the ref
-is upstream itself."
+is upstream itself: :upstream-default, or the pinned commit a :patched entry
+applies its patch files to."
   (let ((fork (ref-repo (entry-value entry :ref))))
     (if fork
         (repo-url fork :github)

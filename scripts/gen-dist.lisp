@@ -116,6 +116,34 @@ kept between runs and only the missing commit is fetched."
 
 (defun native (pathname) (uiop:native-namestring pathname))
 
+(defparameter *patch-committer* '("dotcl dist" . "dist@dotcl.invalid")
+  "Committer identity for the commits APPLY-PATCHES makes. Fixed, so that the
+resulting commit - and so the release prefix and the tarball bytes - depends
+only on the upstream commit and the patch files.")
+
+(defun apply-patches (dir patches)
+  "Apply PATCHES (paths relative to the repository root) with git am on top of
+the commit checked out in DIR, and return the resulting commit.
+
+The patches become real commits rather than working-tree edits so that the
+tarball still comes from git archive at a commit, with file times taken from
+it. The commit is reproducible: author and author date come from each patch,
+the committer is *PATCH-COMMITTER* and the committer date is the author date.
+Its SHA therefore names the upstream commit and the patch contents together,
+which is what the release prefix needs - a changed patch on the same upstream
+commit must not reuse an already-published tarball name."
+  ;; A previous run that died mid-am leaves its state behind, and the next am
+  ;; refuses to start.
+  (when (uiop:directory-exists-p (merge-pathnames ".git/rebase-apply/" dir))
+    (run "git" "-C" (native dir) "am" "--abort"))
+  (apply #'run "git" "-C" (native dir)
+         "-c" (format nil "user.name=~a" (car *patch-committer*))
+         "-c" (format nil "user.email=~a" (cdr *patch-committer*))
+         "-c" "core.autocrlf=false"
+         "am" "--quiet" "--committer-date-is-author-date"
+         (mapcar (lambda (patch) (native (rooted patch))) patches))
+  (trimmed (run "git" "-C" (native dir) "rev-parse" "HEAD")))
+
 (defun short-sha (commit) (subseq commit 0 7))
 
 (defun commit-date (dir commit)
@@ -311,9 +339,12 @@ names.  Everything else reuses the URL it was published under.")
       (let* ((lib (entry-value entry :lib))
              (repo (entry-repo entry))
              (url (entry-repo-url entry))
-             (commit (resolve-commit entry)))
-        (format *error-output* "~&;; ~a ~a @ ~a~%" lib repo (short-sha commit))
-        (let* ((checkout (fetch-repo lib url commit))
+             (base (resolve-commit entry))
+             (patches (entry-patches entry)))
+        (format *error-output* "~&;; ~a ~a @ ~a~@[ + ~d patch~:p~]~%"
+                lib repo (short-sha base) (and patches (length patches)))
+        (let* ((checkout (fetch-repo lib url base))
+               (commit (if patches (apply-patches checkout patches) base))
                (prefix (release-prefix lib checkout commit))
                (tarball (build-tarball lib checkout commit prefix))
                (bytes (file-bytes tarball)))

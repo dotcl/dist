@@ -203,8 +203,9 @@
   (:lib "atomics"
    :upstream "shinmera/atomics"
    :upstream-host :codeberg
-   :disposition :fork-only
-   :ref ("dotcl/atomics" :branch "dotcl")
+   :disposition :patched
+   :ref (:upstream :commit "1caed1aced6c552923e87e37e6e9cfdc185c06b0")
+   :patches ("patches/atomics/0001-Add-dotcl-atomic-op-backend.patch")
    :pr nil
    :retire-when "an upstream PR merges and reaches the stock distribution"
    :notes "Reader conditionals only, in one file, in the shape of the CL-Amiga
@@ -223,8 +224,8 @@
            Without this atomics signals IMPLEMENTATION-NOT-SUPPORTED at load and
            sento cannot load at all. Upstream moved from GitHub to Codeberg in
            August 2025 and says patches go there, which is what
-           :upstream-host :codeberg is for; the fork branch is built on Codeberg
-           master. Upstream PR not filed yet.")
+           :upstream-host :codeberg is for; the patch is made against Codeberg
+           master at the pinned commit. Upstream PR not filed yet.")
 
   (:lib "metatilities-base"
    :upstream "hraban/metatilities-base"
@@ -274,8 +275,9 @@
   (:lib "mmap"
    :upstream "shinmera/mmap"
    :upstream-host :codeberg
-   :disposition :fork-only
-   :ref ("dotcl/mmap" :branch "dotcl")
+   :disposition :patched
+   :ref (:upstream :commit "d8d4fad5db120eb99559340a3a2cc74c53b9f09a")
+   :patches ("patches/mmap/0001-Size-size_t-by-word-size-not-by-x86.patch")
    :pr nil
    :retire-when "an upstream PR merges and reaches the stock distribution"
    :notes "One form in windows.lisp, and nothing in it is dotcl-specific. The
@@ -288,8 +290,8 @@
 
            On x64 Windows the stock library loads unchanged; this entry only
            matters on ARM64. Upstream moved from GitHub to Codeberg in August
-           2025 and the line is unfixed there too, so the fork branch is built on
-           Codeberg master.")
+           2025 and the line is unfixed there too, so the patch is made against
+           Codeberg master at the pinned commit.")
 
 
   (:lib "dexador"

@@ -10,7 +10,7 @@
 (in-package #:dotcl-dist)
 
 (defparameter *dispositions*
-  '(:upstream-merged :upstream-pr-open :bundled-in-release :fork-only))
+  '(:upstream-merged :upstream-pr-open :bundled-in-release :fork-only :patched))
 
 ;;; A submission is the fact that something was filed somewhere this checker
 ;;; cannot read: a GitLab instance behind a bot challenge, a mailing list, a
@@ -125,7 +125,24 @@ the upstream -- only for looking again and writing down what was seen.")
            (fail "~a: :upstream-merged should point at :upstream-default, got ~s" lib ref)))
         ((:upstream-pr-open :bundled-in-release :fork-only)
          (unless (and (ref-repo ref) (ref-branch ref))
-           (fail "~a: :ref must be (\"owner/repo\" :branch \"name\"), got ~s" lib ref))))
+           (fail "~a: :ref must be (\"owner/repo\" :branch \"name\"), got ~s" lib ref)))
+        (:patched
+         ;; Patch files only apply to the tree they were made against, so the
+         ;; upstream commit is pinned rather than followed.
+         (let ((commit (ref-commit ref)))
+           (unless (and (consp ref) (eq (first ref) :upstream)
+                        (stringp commit) (= (length commit) 40)
+                        (every (lambda (c) (digit-char-p c 16)) commit))
+             (fail "~a: :patched needs :ref (:upstream :commit \"<40-hex sha>\"), got ~s"
+                   lib ref)))
+         (let ((patches (entry-patches entry)))
+           (unless (and patches (listp patches) (every #'stringp patches))
+             (fail "~a: :patched needs a non-empty :patches list of file names" lib))
+           (dolist (patch (and (listp patches) patches))
+             (unless (and (stringp patch) (probe-file (rooted patch)))
+               (fail "~a: patch file ~s does not exist" lib patch))))))
+      (when (and (entry-patches entry) (not (eq disposition :patched)))
+        (fail "~a: :patches is only read for :patched entries" lib))
       ;; A pending or merged PR must actually be recorded -- as a :pr when the
       ;; upstream has one this checker can read, or as a :submission when it
       ;; does not. Requiring :pr alone is what pushed the GitLab merge request
@@ -135,13 +152,26 @@ the upstream -- only for looking again and writing down what was seen.")
         (fail "~a: ~s requires :pr or :submission" lib disposition))
       (when (and pr submission)
         (fail "~a: carries both :pr and :submission; keep the one that can be checked" lib))
-      (when (and (eq disposition :fork-only) (or pr submission))
-        (fail "~a: :fork-only must not carry a :pr or :submission (promote it instead)" lib))
+      (when (and (member disposition '(:fork-only :patched)) (or pr submission))
+        (fail "~a: ~s must not carry a :pr or :submission (promote it instead)"
+              lib disposition))
       (when pr
         (multiple-value-bind (repo number) (parse-pr pr)
           (unless (and repo number)
             (fail "~a: :pr ~s is not \"owner/repo#number\"" lib pr)))))))
 
+
+(defun check-patch-files (entries)
+  "Every file under patches/ must be named by an entry. A patch nobody lists is
+never applied, and nothing else would notice it."
+  (let ((listed (loop for entry in entries
+                      append (loop for patch in (entry-patches entry)
+                                   for path = (and (stringp patch) (probe-file (rooted patch)))
+                                   when path collect (namestring path)))))
+    (dolist (file (directory (rooted "patches/*/*.*")))
+      (unless (member (namestring file) listed :test #'string=)
+        (fail "~a is not listed in any entry's :patches"
+              (enough-namestring file *root*))))))
 
 ;;; ------------------------------------------------------------- submissions
 
@@ -306,6 +336,7 @@ could point at, and naming it here would publish its existence."
     (check-schema entry)
     ;; Freshness of hand-checked claims needs no network -- that is the point.
     (check-submission entry))
+  (check-patch-files entries)
   (when network
     (dolist (entry entries)
       (check-pr entry)

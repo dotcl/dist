@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "SANO,Masatoshi" <snmsts@gmail.com>
+Date: Fri, 18 Sep 2026 12:51:59 +0900
+Subject: [PATCH] Size size_t by word size, not by x86
+
+---
+ windows.lisp | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/windows.lisp b/windows.lisp
+index 1e4d9f9..21727a1 100644
+--- a/windows.lisp
++++ b/windows.lisp
+@@ -37,7 +37,9 @@
+ (cffi:defctype lpsecurity-attributes :pointer)
+ (cffi:defctype dword :uint32)
+ (cffi:defctype large-integer :uint64)
+-(cffi:defctype size_t #+x86-64 :uint64 #+x86 :uint32)
++(cffi:defctype size_t
++  #+64-bit :uint64
++  #+32-bit :uint32)
+ 
+ ;; https://docs.microsoft.com/en-us/windows/desktop/api/fileapi/nf-fileapi-createfilew
+ (cffi:defcfun (create-file "CreateFileW") handle

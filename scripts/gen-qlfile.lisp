@@ -25,6 +25,8 @@
          (format t "~&;; ~a: merged upstream — use stock~%" lib))
         (:bundled-in-release
          (format t "~&;; ~a: ships inside the dotcl release — do not fetch~%" lib))
+        (:patched
+         (format t "~&;; ~a: upstream commit plus patch files — use the dotcl dist~%" lib))
         (t
          (when (and repo branch)
            (format t "~&github ~a ~a :branch ~a~%" lib repo branch)))))))
