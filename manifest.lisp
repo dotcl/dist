@@ -90,7 +90,7 @@
    :submission (:url "https://gitlab.common-lisp.net/asdf/asdf/-/merge_requests/252"
                 :state :open
                 :verifiable nil
-                :checked "2026-08-20")
+                :checked "2026-09-26")
    :retire-when "the upstream merge request lands and dotcl stops vendoring asdf"
    :notes "Shipped inside dotcl releases as a precompiled fasl, so the branch here is
            what a source build clones. dotcl-0.1.21 is the current compatibility
