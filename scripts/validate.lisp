@@ -5,6 +5,8 @@
 ;;;;
 ;;;; Exits non-zero if anything fails, so CI can gate on it.
 
+(require "asdf")
+
 (load (merge-pathnames "common.lisp" (or *load-truename* *default-pathname-defaults*)))
 
 (in-package #:dotcl-dist)
