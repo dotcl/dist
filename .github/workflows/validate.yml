@@ -25,5 +25,7 @@ jobs:
           LEDGER_CHECK_NETWORK: '1'
           GH_TOKEN: ${{ github.token }}
         run: sbcl --script scripts/validate.lisp
+      - name: Source ledger checks
+        run: sbcl --script scripts/test-source-ledger.lisp
       - name: qlfile generates
         run: sbcl --script scripts/gen-qlfile.lisp

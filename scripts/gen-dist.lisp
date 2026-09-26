@@ -14,6 +14,10 @@
 ;;;; they are deliberately not committed. A tarball an earlier version already
 ;;;; published keeps that version's URL, so only the new ones are uploaded —
 ;;;; see PUBLISHED-ARCHIVE-URLS.
+;;;;
+;;;; Every source is checked against source-ledger.lisp before anything is
+;;;; built, and the run stops if one no longer matches; see source-ledger.lisp
+;;;; in this directory. A successful run rewrites the ledger.
 
 ;;;; asdf is required rather than assumed: the .asd reading below needs it, and
 ;;;; a dotcl script starts without it, so running this the way the README says
@@ -21,6 +25,7 @@
 (require "asdf")
 
 (load (merge-pathnames "common.lisp" (or *load-truename* *default-pathname-defaults*)))
+(load (merge-pathnames "source-ledger.lisp" (or *load-truename* *default-pathname-defaults*)))
 
 (in-package #:dotcl-dist)
 
@@ -35,34 +40,7 @@ changing it later forces everyone to re-install. Treat it as permanent.")
 keep binaries out of the git history.")
 
 ;;; ------------------------------------------------------------------
-;;; shelling out
-
-(defun run (program &rest args)
-  "Run PROGRAM, return its standard output as a string. Errors are fatal:
-a dist generated from a half-failed command would be worse than none."
-  (let* ((process (uiop:launch-program (cons program args)
-                                       :output :stream
-                                       :error-output :stream))
-         (output (uiop:slurp-input-stream 'string
-                                          (uiop:process-info-output process)))
-         (errors (uiop:slurp-input-stream 'string
-                                          (uiop:process-info-error-output process)))
-         (code (uiop:wait-process process)))
-    (unless (zerop code)
-      (error "~a ~{~a~^ ~} exited ~a~%~a" program args code errors))
-    output))
-
-(defun trimmed (string)
-  (string-trim '(#\Space #\Tab #\Newline #\Return) string))
-
-;;; ------------------------------------------------------------------
 ;;; resolving a :ref to a commit
-
-(defun entry-repo (entry)
-  "The repository a release is built from: the fork when there is one,
-otherwise upstream itself."
-  (or (ref-repo (entry-value entry :ref))
-      (entry-value entry :upstream)))
 
 (defun resolve-commit (entry)
   "Resolve this entry's :ref to a full commit SHA."
@@ -113,8 +91,6 @@ kept between runs and only the missing commit is fetched."
     ;; what systems they define.
     (run "git" "-C" (native dir) "checkout" "--quiet" "--detach" "--force" commit)
     dir))
-
-(defun native (pathname) (uiop:native-namestring pathname))
 
 (defparameter *patch-committer* '("dotcl dist" . "dist@dotcl.invalid")
   "Committer identity for the commits APPLY-PATCHES makes. Fixed, so that the
@@ -330,20 +306,44 @@ names.  Everything else reuses the URL it was published under.")
          ;; own releases.txt.
          (published (published-archive-urls))
          (releases '())
-         (systems '()))
-    (ensure-directories-exist dir)
-    ;; Pass 1: fetch and package. No .asd is read yet — libraries in the same
-    ;; dist refer to each other (cffi's .asd wants trivial-features), so every
-    ;; checkout has to exist and be visible to asdf before any of them is read.
+         (systems '())
+         (sources '())
+         (ledger '()))
+    ;; Pass 0: fetch every source and hold it against source-ledger.lisp before
+    ;; anything is built or written. Nothing from a source that fails the check
+    ;; is archived, and no .asd from it is loaded.
     (dolist (entry entries)
       (let* ((lib (entry-value entry :lib))
              (repo (entry-repo entry))
-             (url (entry-repo-url entry))
-             (base (resolve-commit entry))
-             (patches (entry-patches entry)))
+             (base (resolve-commit entry)))
         (format *error-output* "~&;; ~a ~a @ ~a~@[ + ~d patch~:p~]~%"
-                lib repo (short-sha base) (and patches (length patches)))
-        (let* ((checkout (fetch-repo lib url base))
+                lib repo (short-sha base)
+                (and (entry-patches entry) (length (entry-patches entry))))
+        (push (list :lib lib
+                    :host (entry-source-host entry)
+                    :source repo
+                    :commit base
+                    :dir (fetch-repo lib (entry-repo-url entry) base))
+              sources)))
+    (setf sources (nreverse sources))
+    (multiple-value-bind (new-ledger refusals notes)
+        (check-sources sources (read-ledger))
+      (report-ledger refusals notes)
+      (when refusals
+        (format *error-output* ";; nothing written~%")
+        (uiop:quit 1))
+      (setf ledger new-ledger))
+    (ensure-directories-exist dir)
+    ;; Pass 1: package. No .asd is read yet — libraries in the same
+    ;; dist refer to each other (cffi's .asd wants trivial-features), so every
+    ;; checkout has to exist and be visible to asdf before any of them is read.
+    (loop for entry in entries
+          for source in sources
+          do
+      (let* ((lib (entry-value entry :lib))
+             (base (getf source :commit))
+             (patches (entry-patches entry)))
+        (let* ((checkout (getf source :dir))
                (commit (if patches (apply-patches checkout patches) base))
                (prefix (release-prefix lib checkout commit))
                (tarball (build-tarball lib checkout commit prefix))
@@ -421,6 +421,9 @@ names.  Everything else reuses the URL it was published under.")
           (with-open-file (s path :direction :output
                                :if-exists :append :if-does-not-exist :create)
             (format s "~a~%" line)))))
+    ;; Written last, with the rest of the version: the ledger names the
+    ;; commits this version was built from.
+    (write-ledger ledger)
     (format *error-output* "~&;; ~a releases, ~a systems → ~a~%"
             (length releases) (length systems) (native dir))
     ;; build/ is gitignored, so `git status` shows nothing here and the upload

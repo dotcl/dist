@@ -7,6 +7,7 @@
            #:ref-tag #:ref-commit #:bundled-p #:dist-entries #:entry-patches
            #:manifest-path #:parse-pr
            #:*hosts* #:entry-host #:repo-url #:entry-repo-url
+           #:entry-repo #:entry-source-host
            #:*root* #:rooted #:*dist-name* #:version-dir))
 
 (in-package #:dotcl-dist)
@@ -113,6 +114,19 @@ here deliberately rather than inherit a guess.")
       (error "no clone URL for ~a on ~s; add the host to *HOSTS*" repo host))
     (format nil template repo)))
 
+(defun entry-repo (entry)
+  "The repository a release is built from: the fork when there is one,
+otherwise upstream itself."
+  (or (ref-repo (entry-value entry :ref))
+      (entry-value entry :upstream)))
+
+(defun entry-source-host (entry)
+  "The host of ENTRY-REPO: GitHub for a :ref fork, the upstream host otherwise.
+See ENTRY-REPO-URL."
+  (if (ref-repo (entry-value entry :ref))
+      :github
+      (entry-host entry)))
+
 (defun entry-repo-url (entry)
   "Clone URL of the repository a release is built from.
 
@@ -120,10 +134,7 @@ A :ref fork is one of ours and lives in the dotcl organization on GitHub
 whatever the upstream host is, so :upstream-host is consulted only when the ref
 is upstream itself: :upstream-default, or the pinned commit a :patched entry
 applies its patch files to."
-  (let ((fork (ref-repo (entry-value entry :ref))))
-    (if fork
-        (repo-url fork :github)
-        (repo-url (entry-value entry :upstream) (entry-host entry)))))
+  (repo-url (entry-repo entry) (entry-source-host entry)))
 
 (defun parse-pr (pr)
   "Split \"owner/repo#123\" into (values \"owner/repo\" 123), or NIL."

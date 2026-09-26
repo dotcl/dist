@@ -91,6 +91,40 @@ Give the dist a higher preference than the stock one and its releases shadow
 the stock versions system by system. When an entry retires, the release simply
 stops appearing and the stock version becomes visible again.
 
+### Source ledger
+
+[`source-ledger.lisp`](source-ledger.lisp) records, for every project in the
+dist, the repository its release is imported from (the `:ref` fork, or upstream
+itself), the numeric ids the host gave that repository and its owner, and the
+commit imported last:
+
+```lisp
+(:lib "cl-fad" :host :github :source "edicl/cl-fad" :name "edicl/cl-fad" :repo-id 2293700 :owner-id 1013679 :commit "714257f064cbe326855701be1aa5ef1199f3c676")
+```
+
+A name can come to mean a different repository; the ids cannot. Before it
+builds anything, `gen-dist` fetches every source and holds it against the
+ledger. It stops, writes nothing, and names each project and the reason when:
+
+- the repository id or the owner id is not the recorded one, or the host no
+  longer knows the repository;
+- the commit to import does not have the recorded commit in its history (a
+  rewritten branch, or a pinned commit moved to unrelated history).
+
+A rename keeps both ids, so it updates `:name` and the run continues. A project
+with no ledger line is recorded on its first run, and so is one whose `:ref`
+now names a different repository: that change is made in the manifest, where
+it is reviewed. Ids come from `gh api` for GitHub and the anonymous Codeberg
+API; a host with neither gets the history check only. A successful run rewrites
+the ledger with the commits it imported, so commit it with the dist version.
+
+To accept a change after looking at it, delete that project's line; the next
+run records the source as it is now. When only the history changed, pinning
+`:ref` to the recorded commit keeps the previous version in the meantime.
+
+`scripts/seed-ledger.lisp` fills in missing lines without generating a dist,
+from the commits the newest published version was built from. It only reads.
+
 ## Schema
 
 Each entry is a plist:
@@ -201,6 +235,15 @@ public facts.
 ```sh
 sbcl --script scripts/validate.lisp          # schema only
 LEDGER_CHECK_NETWORK=1 sbcl --script scripts/validate.lisp   # + gh checks
+```
+
+`scripts/test-source-ledger.lisp` exercises the source ledger checks against a
+throwaway git repository and a stubbed host, with no network: a repository
+with different ids, a new HEAD that does not continue the recorded commit, a
+rename, and the first-run and manifest-change cases.
+
+```sh
+sbcl --script scripts/test-source-ledger.lisp   # or: dotcl scripts/test-source-ledger.lisp
 ```
 
 The workflow runs on every push and pull request, and weekly — the scheduled run
