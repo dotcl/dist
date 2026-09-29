@@ -3,8 +3,8 @@
 ;;;;   sbcl --script scripts/gen-qlfile.lisp > qlfile
 ;;;;   dotcl scripts/gen-qlfile.lisp > qlfile
 ;;;;
-;;;; Libraries whose support code is already merged upstream, or that ship
-;;;; inside a dotcl release, emit nothing: for those you want stock.
+;;;; Libraries whose support code is already merged upstream emit nothing:
+;;;; for those you want stock.
 
 (load (merge-pathnames "common.lisp" (or *load-truename* *default-pathname-defaults*)))
 
@@ -23,8 +23,6 @@
       (case disposition
         (:upstream-merged
          (format t "~&;; ~a: merged upstream — use stock~%" lib))
-        (:bundled-in-release
-         (format t "~&;; ~a: ships inside the dotcl release — do not fetch~%" lib))
         (:patched
          (format t "~&;; ~a: upstream commit plus patch files — use the dotcl dist~%" lib))
         (t

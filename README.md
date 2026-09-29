@@ -20,8 +20,8 @@ that still need a fork:
 sbcl --script scripts/gen-qlfile.lisp > qlfile   # or: dotcl scripts/gen-qlfile.lisp
 ```
 
-Entries whose support code is already merged upstream, or that ship inside a
-dotcl release, produce no `qlfile` line — you want stock for those.
+Entries whose support code is already merged upstream produce no `qlfile`
+line — you want stock for those.
 
 ### As a quicklisp dist
 
@@ -133,13 +133,11 @@ Each entry is a plist:
 |---|---|
 | `:lib` | library name, as the distribution knows it |
 | `:upstream` | `owner/repo` of the upstream project |
-| `:upstream-host` | `:github` (default), `:codeberg`, `:gitlab`, or `:sourceforge` |
+| `:upstream-host` | `:github` (default), `:codeberg`, or `:sourceforge` |
 | `:disposition` | see below |
 | `:ref` | where the dotcl support code lives *now* — `:upstream-default`, `("owner/repo" :branch "name" \| :tag "name" \| :commit "sha")`, or for a `:patched` entry `(:upstream :commit "sha")` |
 | `:patches` | `:patched` only: patch files under `patches/<lib>/`, applied in order on top of the `:ref` commit |
-| `:bundled` | `t` when dotcl ships the library itself, so it needs no dist release |
 | `:pr` | upstream pull request this checker can read, as `owner/repo#number`, or `nil` |
-| `:submission` | something filed where the state cannot be read automatically: `(:url "…" :state :open \| :merged \| :closed \| :withdrawn :verifiable nil :checked "YYYY-MM-DD")`. Use instead of `:pr`, never both |
 | `:fork-status` | tracks a fork that has outlived its purpose but is still there, e.g. `(:redundant "…")`. Deleting the fork removes the key |
 | `:retire-when` | the condition under which this entry is deleted |
 | `:notes` | prose: what the patch does, anything a reader would otherwise have to guess |
@@ -149,23 +147,13 @@ Each entry is a plist:
 - `:upstream-merged` — merged upstream; dotcl still needs a non-stock source
   only until the merge reaches the stock distribution
 - `:upstream-pr-open` — pull request filed and pending
-- `:bundled-in-release` — shipped inside a dotcl release rather than pulled
 - `:fork-only` — public fork exists, no upstream pull request yet
 - `:patched` — patch files kept in this repository, applied to a pinned
   upstream commit; no upstream pull request yet
 
-`:bundled` is a separate axis from `:disposition`: it says dotcl ships the
-library itself, which is independent of how the upstream conversation is going.
-quicklisp-client is both `:upstream-pr-open` and `:bundled` — the pull request
-is still open, and dotcl compiles that branch into the fasl it ships.
-
 `:upstream-host` says where *upstream* lives, and nothing else. A `:ref` fork is
 one of ours and is on GitHub under the `dotcl` organization whichever host
-upstream sits on, so it is fetched and checked as GitHub either way. `:gitlab`
-is a known host with no clone URL attached: the only GitLab entry is bundled and
-never fetched, and GitLab is not a single site the way github.com and
-codeberg.org are; an entry that needs cloning from one adds its instance to
-`*hosts*` deliberately.
+upstream sits on, so it is fetched and checked as GitHub either way.
 
 Codeberg-hosted libraries are built from the upstream commit plus patch files
 kept here, under `patches/<lib>/`, instead of from a fork. A `:patched` entry
@@ -220,11 +208,6 @@ public facts.
   `:ref` shape consistent with the disposition
 - patch files: every `:patches` file exists, and every file under `patches/`
   is listed by an entry
-- submission freshness (no network needed, which is the point): a `:submission`
-  that is still `:open` goes stale 30 days after its `:checked` date, so an
-  unverifiable claim has to be looked at again rather than quietly aged. An
-  earlier "waiting for account approval" note lived in `:notes` for seven weeks
-  past the approval and survived an audit, because prose has no expiry
 - with `gh` available: every `:pr` exists and its state agrees with
   `:disposition`; every `:ref` fork and branch exists and is public. A `:pr` on
   a `:codeberg` upstream is read the same way through Codeberg's Gitea API with

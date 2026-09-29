@@ -59,18 +59,6 @@
    :retire-when "PR 22 merges and the merged version reaches the stock distribution"
    :notes "Adds a dotcl (.NET) backend, so Lem/SLIME-style tooling can attach to a dotcl image.")
 
-  (:lib "quicklisp-client"
-   :upstream "quicklisp/quicklisp-client"
-   :disposition :upstream-pr-open
-   :bundled t
-   :ref ("dotcl/quicklisp-client" :branch "dotcl-support")
-   :pr "quicklisp/quicklisp-client#245"
-   :retire-when "PR 245 merges and dotcl pulls the stock client"
-   :notes "Adds dotcl support to the client's implementation detection and fasl paths.
-           dotcl compiles this branch into the quicklisp contrib fasl it ships, so
-           (require :quicklisp) needs no download — hence :bundled, even though the
-           upstream pull request is still open.")
-
   (:lib "babel"
    :upstream "cl-babel/babel"
    :disposition :upstream-pr-open
@@ -79,30 +67,6 @@
    :retire-when "PR 67 merges and a quicklisp dist ships the merged version"
    :notes "Encodes astral-plane characters as surrogate pairs on UTF-16 hosts. Not
            dotcl-specific: the same bug is visible on any UTF-16 host.")
-
-  (:lib "asdf"
-   :upstream "common-lisp/asdf"
-   :upstream-host :gitlab
-   :disposition :bundled-in-release
-   :bundled t
-   :ref ("dotcl/asdf" :branch "dotcl-0.1.21")
-   :pr nil
-   :submission (:url "https://gitlab.common-lisp.net/asdf/asdf/-/merge_requests/252"
-                :state :open
-                :verifiable nil
-                :checked "2026-09-26")
-   :retire-when "the upstream merge request lands and dotcl stops vendoring asdf"
-   :notes "Shipped inside dotcl releases as a precompiled fasl, so the branch here is
-           what a source build clones. dotcl-0.1.21 is the current compatibility
-           generation, updated in place; a new dotcl-X.Y.Z branch is cut only on the
-           next hard incompatibility, and older branches stay frozen for older
-           releases. The upstream project lives on GitLab behind a bot challenge this
-           checker cannot read, so the merge request is recorded in :submission
-           rather than :pr. It carries the uiop OS-abstraction subset --
-           getenv/quit/argv, run-program, raw-command-line-arguments,
-           package-local-nicknames, getcwd, *unspecific-pathname-type* -- and the
-           branch shipped here has grown past it since, so that merge landing would
-           not on its own retire this entry.")
 
   (:lib "cffi"
    :upstream "cffi/cffi"

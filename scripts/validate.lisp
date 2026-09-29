@@ -12,21 +12,7 @@
 (in-package #:dotcl-dist)
 
 (defparameter *dispositions*
-  '(:upstream-merged :upstream-pr-open :bundled-in-release :fork-only :patched))
-
-;;; A submission is the fact that something was filed somewhere this checker
-;;; cannot read: a GitLab instance behind a bot challenge, a mailing list, a
-;;; Savannah tracker with no PR object at all. The point of the vocabulary is
-;;; not the URL -- prose could hold that -- but the DATE. An unverifiable claim
-;;; is only as good as the last time a human looked, so it carries :checked and
-;;; goes stale on its own. ":pr is waiting for account approval" once sat in
-;;; :notes for seven weeks after the approval, through one audit, because prose
-;;; has no expiry.
-(defparameter *submission-states* '(:open :merged :closed :withdrawn))
-
-(defparameter *submission-max-age-days* 30
-  "How long a hand-checked submission claim stays believable. Not a deadline for
-the upstream -- only for looking again and writing down what was seen.")
+  '(:upstream-merged :upstream-pr-open :fork-only :patched))
 
 (defparameter *required-keys* '(:lib :upstream :disposition :ref :retire-when))
 
@@ -114,8 +100,7 @@ the upstream -- only for looking again and writing down what was seen.")
         (fail "~a: missing ~s" (or lib "<unnamed entry>") key)))
     (let ((disposition (entry-value entry :disposition))
           (ref (entry-value entry :ref))
-          (pr (entry-value entry :pr))
-          (submission (entry-value entry :submission)))
+          (pr (entry-value entry :pr)))
       (unless (member disposition *dispositions*)
         (fail "~a: unknown :disposition ~s" lib disposition))
       (unless (assoc (entry-host entry) *hosts*)
@@ -125,7 +110,7 @@ the upstream -- only for looking again and writing down what was seen.")
         (:upstream-merged
          (unless (eq ref :upstream-default)
            (fail "~a: :upstream-merged should point at :upstream-default, got ~s" lib ref)))
-        ((:upstream-pr-open :bundled-in-release :fork-only)
+        ((:upstream-pr-open :fork-only)
          (unless (and (ref-repo ref) (ref-branch ref))
            (fail "~a: :ref must be (\"owner/repo\" :branch \"name\"), got ~s" lib ref)))
         (:patched
@@ -145,18 +130,12 @@ the upstream -- only for looking again and writing down what was seen.")
                (fail "~a: patch file ~s does not exist" lib patch))))))
       (when (and (entry-patches entry) (not (eq disposition :patched)))
         (fail "~a: :patches is only read for :patched entries" lib))
-      ;; A pending or merged PR must actually be recorded -- as a :pr when the
-      ;; upstream has one this checker can read, or as a :submission when it
-      ;; does not. Requiring :pr alone is what pushed the GitLab merge request
-      ;; into prose, where it went stale unnoticed.
+      ;; A pending or merged PR must actually be recorded as :pr.
       (when (and (member disposition '(:upstream-merged :upstream-pr-open))
-                 (not pr) (not submission))
-        (fail "~a: ~s requires :pr or :submission" lib disposition))
-      (when (and pr submission)
-        (fail "~a: carries both :pr and :submission; keep the one that can be checked" lib))
-      (when (and (member disposition '(:fork-only :patched)) (or pr submission))
-        (fail "~a: ~s must not carry a :pr or :submission (promote it instead)"
-              lib disposition))
+                 (not pr))
+        (fail "~a: ~s requires :pr" lib disposition))
+      (when (and (member disposition '(:fork-only :patched)) pr)
+        (fail "~a: ~s must not carry a :pr (promote it instead)" lib disposition))
       (when pr
         (multiple-value-bind (repo number) (parse-pr pr)
           (unless (and repo number)
@@ -174,51 +153,6 @@ never applied, and nothing else would notice it."
       (unless (member (namestring file) listed :test #'string=)
         (fail "~a is not listed in any entry's :patches"
               (enough-namestring file *root*))))))
-
-;;; ------------------------------------------------------------- submissions
-
-(defun parse-iso-date (string)
-  "Universal time for \"YYYY-MM-DD\", or NIL if it is not that shape."
-  (when (and (stringp string) (= (length string) 10)
-             (char= (char string 4) #\-) (char= (char string 7) #\-))
-    (let ((y (parse-integer string :start 0 :end 4 :junk-allowed t))
-          (m (parse-integer string :start 5 :end 7 :junk-allowed t))
-          (d (parse-integer string :start 8 :end 10 :junk-allowed t)))
-      (when (and y m d (<= 1 m 12) (<= 1 d 31))
-        (encode-universal-time 0 0 12 d m y 0)))))
-
-(defun days-since (universal-time)
-  (floor (- (get-universal-time) universal-time) (* 60 60 24)))
-
-(defun check-submission (entry)
-  "Shape and freshness of :submission. Nothing here reaches the network: the
-whole point of the field is that the state cannot be read automatically, so what
-is checked is that a human said when they looked."
-  (let* ((lib (entry-value entry :lib))
-         (submission (entry-value entry :submission)))
-    (when submission
-      (unless (listp submission)
-        (fail "~a: :submission must be a plist, got ~s" lib submission)
-        (return-from check-submission))
-      (let ((url (getf submission :url))
-            (state (getf submission :state))
-            (checked (getf submission :checked)))
-        (unless (and (stringp url) (search "://" url))
-          (fail "~a: :submission needs a :url, got ~s" lib url))
-        (unless (member state *submission-states*)
-          (fail "~a: :submission :state ~s is not one of ~s" lib state *submission-states*))
-        (let ((when (parse-iso-date checked)))
-          (cond
-            ((null when)
-             (fail "~a: :submission :checked must be \"YYYY-MM-DD\", got ~s" lib checked))
-            ((eq state :open)
-             ;; Only an open submission rots: a merged or closed one is finished,
-             ;; and re-reading it would not change what the entry says.
-             (let ((age (days-since when)))
-               (when (> age *submission-max-age-days*)
-                 (fail "~a: :submission was last checked ~d days ago (~a); look again ~
-and update :checked, or move the entry on"
-                       lib age checked))))))))))
 
 ;;; --------------------------------------------------------------- network
 
@@ -335,9 +269,7 @@ could point at, and naming it here would publish its existence."
   (unless (eql 2 (getf (cdr manifest) :format-version))
     (fail "unsupported :format-version ~s" (getf (cdr manifest) :format-version)))
   (dolist (entry entries)
-    (check-schema entry)
-    ;; Freshness of hand-checked claims needs no network -- that is the point.
-    (check-submission entry))
+    (check-schema entry))
   (check-patch-files entries)
   (when network
     (dolist (entry entries)

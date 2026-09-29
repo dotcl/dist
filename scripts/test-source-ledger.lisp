@@ -154,7 +154,7 @@
 
         ;; a host with no identity API: only history
         (let ((*repo-identity-function* (constantly :none))
-              (plain (make-ledger-entry "lib" :gitlab "someone/lib" '() a)))
+              (plain (make-ledger-entry "lib" :sourceforge "someone/lib" '() a)))
           (multiple-value-bind (new refusals) (try b (list plain))
             (check "no identity API: descendant accepted"
                    (and (null refusals) (equal (getf (first new) :commit) b))))

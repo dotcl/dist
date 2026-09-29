@@ -4,7 +4,7 @@
 (defpackage #:dotcl-dist
   (:use #:cl)
   (:export #:load-manifest #:entries #:entry-value #:ref-repo #:ref-branch
-           #:ref-tag #:ref-commit #:bundled-p #:dist-entries #:entry-patches
+           #:ref-tag #:ref-commit #:dist-entries #:entry-patches
            #:manifest-path #:parse-pr
            #:*hosts* #:entry-host #:repo-url #:entry-repo-url
            #:entry-repo #:entry-source-host
@@ -74,21 +74,13 @@ regenerated dist byte-identical and keeps unrelated upstream churn out."
 the pinned upstream commit of a :patched entry. NIL for every other entry."
   (entry-value entry :patches))
 
-(defun bundled-p (entry)
-  "True when dotcl ships this library itself, so nothing needs fetching.
-
-Separate from :disposition, which records the relationship with upstream. The
-two are independent: quicklisp-client has an open upstream pull request and is
-bundled at the same time."
-  (entry-value entry :bundled))
-
 (defun dist-entries (manifest)
   "Entries that become releases in the generated dist.
 
-Everything except what dotcl bundles. An entry whose fix is already merged
-upstream still belongs here: the stock quicklisp dist keeps shipping the old
-version until it catches up, which is exactly what :retire-when describes."
-  (remove-if #'bundled-p (entries manifest)))
+Every entry in the manifest. An entry whose fix is already merged upstream
+still belongs here: the stock quicklisp dist keeps shipping the old version
+until it catches up, which is exactly what :retire-when describes."
+  (entries manifest))
 
 ;;; ------------------------------------------------------------------
 ;;; where a repository lives
@@ -96,16 +88,10 @@ version until it catches up, which is exactly what :retire-when describes."
 (defparameter *hosts*
   '((:github . "https://github.com/~a.git")
     (:codeberg . "https://codeberg.org/~a.git")
-    (:gitlab . nil)
     (:sourceforge . nil))
   "Known :upstream-host values, mapped to a clone URL template.
 
-:gitlab has no template on purpose. The one GitLab entry, asdf, is :bundled and
-so is never fetched, and GitLab is not one site the way github.com and
-codeberg.org are; an entry that needs cloning from one should add its instance
-here deliberately rather than inherit a guess.
-
-:sourceforge has no template either: its one entry, series, is built from a
+:sourceforge has no template: its one entry, series, is built from a
 fork under the dotcl organization, so upstream is never fetched.")
 
 (defun entry-host (entry)
