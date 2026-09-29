@@ -431,4 +431,64 @@
 
            Sixty interfaces, ARGLIST included, on the same terms as the slime
            entry. One commit on upstream master, no existing backend touched.
-           PR 717 filed 2026-09-01.")))
+           PR 717 filed 2026-09-01.")
+
+  (:lib "trivial-package-local-nicknames"
+   :upstream "phoe/trivial-package-local-nicknames"
+   :disposition :fork-only
+   :ref ("dotcl/trivial-package-local-nicknames" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream pull request merges and a quicklisp dist ships the merged version"
+   :notes "dotcl exports the package-local nickname API from the DOTCL package;
+           the patch imports it from there, as the other implementations do from
+           theirs, and adds dotcl test data. One commit on the commit the stock
+           dist ships (8a4d09c). The library, lichat-protocol and
+           lichat-serverlib go from failing to loading. Its own tests run 17, 10
+           fail on dotcl: those are gaps in dotcl's nickname handling, not in
+           the patch. SBCL 2.6.8 still loads the branch and passes 18 of 18.")
+
+  (:lib "fset"
+   :upstream "slburson/fset"
+   :disposition :fork-only
+   :ref ("dotcl/fset" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream pull request merges and a quicklisp dist ships the merged version"
+   :notes "A #+dotcl block in Code/port.lisp, in the shape of the other SMP
+           implementations: MAKE-LOCK and WITH-LOCK on dotcl's native locks, and
+           the memory barriers built from a lock. Without it WITH-LOCK is
+           undefined and (with-lock (+Tuple-Key-Lock+) ...) compiles as a call.
+           One commit on cead3fc, the commit the stock fset-v2.2.0 release was
+           cut from. The FSet test suite passes on dotcl; SBCL 2.6.8 still loads
+           the branch and passes. coalton gets past fset and stops next in its
+           own code (hashing is #-(or sbcl allegro ccl)).")
+
+  (:lib "moptilities"
+   :upstream "hraban/moptilities"
+   :disposition :fork-only
+   :ref ("dotcl/moptilities" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream pull request merges and a quicklisp dist ships the merged version"
+   :notes "SLOT-NAMES on a structure name takes the FIND-CLASS path on dotcl as it
+           does on SBCL, instead of calling the unimplemented GET-STRUCTURE, and
+           FUNCTION-ARGLIST uses DOTCL:FUNCTION-LAMBDA-LIST. One commit on
+           upstream master (a436f16). The test suite runs 37 with 3 failures on
+           dotcl, all FUNCTION-ARGLIST; SBCL 2.6.8 runs 37 with 7 failures
+           before and after the patch. reblocks gets past moptilities and stops
+           next on a dotcl readtable bug.")
+
+  (:lib "series"
+   :upstream "series"
+   :upstream-host :sourceforge
+   :disposition :fork-only
+   :ref ("dotcl/series" :branch "dotcl")
+   :pr nil
+   :retire-when "the patch merges upstream and a quicklisp dist ships the merged version"
+   :notes "Upstream is git://git.code.sf.net/p/series/series, which has no pull
+           requests; the change would go to the maintainers as a patch. dotcl
+           joins the features that push :SERIES-ANSI, imports COMPILER-LET from
+           DOTCL-CLTL2 and gets the GENERATOR deftype, the same three lines SBCL
+           has. One commit on upstream master (da9061b). series goes from
+           failing to loading. Its tests pass 462 of 567 on dotcl; the rest are
+           dotcl bugs (GO to a tag of an enclosing TAGBODY, SETF of
+           ROW-MAJOR-AREF on a string). SBCL 2.6.8 passes 566 of 567 with the
+           patch, the other one being a package lock in the test file.")))

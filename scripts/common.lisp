@@ -96,13 +96,17 @@ version until it catches up, which is exactly what :retire-when describes."
 (defparameter *hosts*
   '((:github . "https://github.com/~a.git")
     (:codeberg . "https://codeberg.org/~a.git")
-    (:gitlab . nil))
+    (:gitlab . nil)
+    (:sourceforge . nil))
   "Known :upstream-host values, mapped to a clone URL template.
 
 :gitlab has no template on purpose. The one GitLab entry, asdf, is :bundled and
 so is never fetched, and GitLab is not one site the way github.com and
 codeberg.org are; an entry that needs cloning from one should add its instance
-here deliberately rather than inherit a guess.")
+here deliberately rather than inherit a guess.
+
+:sourceforge has no template either: its one entry, series, is built from a
+fork under the dotcl organization, so upstream is never fetched.")
 
 (defun entry-host (entry)
   "Where upstream lives. :github unless the entry says otherwise."
