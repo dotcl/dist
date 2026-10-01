@@ -132,10 +132,15 @@ names its own releases."
   (format nil "~a-~a-~a" lib (commit-date dir commit) (short-sha commit)))
 
 (defun build-tarball (lib dir commit prefix)
-  "git archive | gzip -n, so the same commit always produces the same bytes.
-gzip without -n omits the timestamp and original file name; git archive takes
-file mtimes from the commit. GitHub's own /archive/ tarballs are not stable
-over time, which is why the dist never points at them."
+  "git archive | gzip -n. gzip without -n omits the timestamp and original file
+name; git archive takes file mtimes from the commit, so the tar stream is the
+same for the same commit. The compressed bytes are not: gzip implementations
+differ (Apple's gzip and GNU gzip give different output for the same tar), so a
+tarball built on another machine can differ in size and digest from the one
+that was uploaded. That is why a tarball already published is measured from the
+published asset, never from this rebuild - see PUBLISHED-ARCHIVE. GitHub's own
+/archive/ tarballs are not stable over time, which is why the dist never points
+at them."
   (let ((out (rooted (format nil "build/~a.tar.gz" prefix))))
     (ensure-directories-exist out)
     (uiop:run-program
@@ -147,10 +152,13 @@ over time, which is why the dist never points at them."
 ;;; ------------------------------------------------------------------
 ;;; digests
 ;;;
-;;; The client stores archive-md5 and archive-content-sha1 but never checks
-;;; them against a download; content-sha1 is only compared between dist
-;;; versions to report that a release changed (dist-update.lisp). So both are
-;;; taken over the tarball bytes here. That differs from quicklisp-controller,
+;;; The client checks only the size of a downloaded archive (a mismatch is
+;;; BADLY-SIZED-LOCAL-ARCHIVE, also on update-dist when the archive is already
+;;; on disk). It stores archive-md5 and archive-content-sha1 but never checks
+;;; them against a download; content-sha1 is compared between dist versions to
+;;; decide that a release changed and must be reinstalled (dist-update.lisp).
+;;; So all three must describe the bytes users actually download, and both
+;;; digests are taken over the tarball bytes here. That differs from quicklisp-controller,
 ;;; whose content-sha1 is computed over the unpacked contents — do not assume
 ;;; the two are interchangeable. What matters is that the value is
 ;;; content-derived and stable, which reproducible tarballs give us.
@@ -291,6 +299,24 @@ versions point into it."
   "Tarballs this run has to upload: the ones no earlier releases.txt already
 names.  Everything else reuses the URL it was published under.")
 
+(defun published-archive (url)
+  "Local copy of the asset at URL, downloaded into build/published/ once.
+
+A tarball another dist version already published has to be described by the
+bytes at its URL, not by a rebuild here: the rebuild has the same tar stream
+but not necessarily the same gzip output (see BUILD-TARBALL). 2026-09-29 wrote
+the sizes of a local rebuild for 15 reused tarballs, and update-dist from
+2026-09-19 stopped with BADLY-SIZED-LOCAL-ARCHIVE. Assets are never replaced,
+so a cached copy stays valid."
+  (let* ((file (subseq url (1+ (position #\/ url :from-end t))))
+         (path (rooted (format nil "build/published/~a" file)))
+         (temp (rooted (format nil "build/published/~a.part" file))))
+    (unless (probe-file path)
+      (ensure-directories-exist path)
+      (run "curl" "-sfL" "-o" (native temp) url)
+      (rename-file temp path))
+    path))
+
 (defun archive-url (version prefix published)
   (let ((file (format nil "~a.tar.gz" prefix)))
     (or (gethash file published)
@@ -347,9 +373,11 @@ names.  Everything else reuses the URL it was published under.")
                (commit (if patches (apply-patches checkout patches) base))
                (prefix (release-prefix lib checkout commit))
                (tarball (build-tarball lib checkout commit prefix))
-               (bytes (file-bytes tarball)))
+               (url (archive-url version prefix published))
+               (reused (gethash (format nil "~a.tar.gz" prefix) published))
+               (bytes (file-bytes (if reused (published-archive reused) tarball))))
           (push (list :lib lib
-                      :url (archive-url version prefix published)
+                      :url url
                       :size (length bytes)
                       :md5 (digest "MD5" bytes)
                       :sha1 (digest "SHA1" bytes)

@@ -84,8 +84,19 @@ The consequence is that a release can never be deleted, because later dist
 versions point into it.
 
 Tarballs are built with `git archive … | gzip -n` at a resolved commit, so the
-same input always produces the same bytes. GitHub's own `/archive/` tarballs
-are not stable over time and are deliberately not used.
+same input always produces the same tar stream. The compressed bytes are not
+the same everywhere: gzip implementations differ (Apple's and GNU's do), so a
+rebuild on another machine can differ in size and digest from the uploaded
+file. A tarball an earlier version published is therefore described by its
+published asset, which generation downloads into `build/published/`, never by
+the local rebuild. The client checks the size, and a wrong one stops
+`update-dist` with `BADLY-SIZED-LOCAL-ARCHIVE` (2026-09-29 was first published
+that way). GitHub's own `/archive/` tarballs are not stable over time and are
+deliberately not used.
+
+After uploading, run the network checks (see [Checks](#checks)): they download
+every asset every `releases.txt` names and fail if one is missing or its size
+or md5 differs from the line.
 
 Give the dist a higher preference than the stock one and its releases shadow
 the stock versions system by system. When an entry retires, the release simply
@@ -214,10 +225,12 @@ public facts.
   `curl`, which answers anonymously, with no token, and no weaker a check
 - inventory drift: repositories under the `dotcl` organization that no entry
   mentions are reported, so a fork cannot quietly diverge from the manifest
+- release assets: every URL in every published `releases.txt` is downloaded,
+  and its size and md5 must match the line
 
 ```sh
 sbcl --script scripts/validate.lisp          # schema only
-LEDGER_CHECK_NETWORK=1 sbcl --script scripts/validate.lisp   # + gh checks
+LEDGER_CHECK_NETWORK=1 sbcl --script scripts/validate.lisp   # + gh and release-asset checks
 ```
 
 `scripts/test-source-ledger.lisp` exercises the source ledger checks against a

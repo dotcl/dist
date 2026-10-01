@@ -49,9 +49,16 @@
 ;;; earlier releases, so a release asset that goes missing breaks dist versions
 ;;; nobody has touched since.  It has happened: two tarballs were not attached
 ;;; in 2026-09-15 and the URLs naming them answered 404 until it was noticed by
-;;; hand.  Ask HTTP rather than trusting the file.
-(defun release-url-lines ()
-  "Every (version url) pair recorded under docs/, newest version last."
+;;; hand.  So each asset is downloaded rather than the file trusted.
+;;;
+;;; Answering 200 is not enough either.  The client compares the size of the
+;;; archive on disk with the size in releases.txt and stops with
+;;; BADLY-SIZED-LOCAL-ARCHIVE when they differ; 2026-09-29 described 15 reused
+;;; tarballs by a local rebuild whose gzip output differed from the uploaded
+;;; bytes, and update-dist from 2026-09-19 failed.  So size and file-md5 of
+;;; every line are checked against the downloaded bytes.
+(defun release-lines ()
+  "Every (version url size md5) recorded under docs/, newest version last."
   (loop for dir in (sort (directory (rooted (format nil "docs/~a/*/" *dist-name*)))
                          #'string< :key #'namestring)
         for file = (merge-pathnames "releases.txt" dir)
@@ -59,37 +66,60 @@
           append (let ((version (car (last (pathname-directory dir)))))
                    (loop for line in (uiop:read-file-lines file)
                          unless (or (zerop (length line)) (char= (char line 0) #\#))
-                           collect (list version
-                                         (let* ((start (1+ (position #\Space line)))
-                                                (end (position #\Space line :start start)))
-                                           (subseq line start end)))))))
+                           collect (destructuring-bind (project url size md5 &rest rest)
+                                       (uiop:split-string line :separator " ")
+                                     (declare (ignore project rest))
+                                     (list version url (parse-integer size) md5))))))
 
-(defun url-ok-p (url)
-  ;; No -o: this runs curl directly rather than through a shell, so a
-  ;; /dev/null written here reaches a native Windows curl as a filename it
-  ;; cannot open - every URL then looks dead.  The headers -I prints go to
-  ;; stdout with the status code appended on its own line, which is the line
-  ;; read back.
-  (multiple-value-bind (out okp)
-      (run-command "curl" (list "-sIL" "-w" (format nil "~%%{http_code}~%") url))
-    (declare (ignore okp))
-    (let* ((lines (remove "" (uiop:split-string out :separator '(#\Newline #\Return))
-                          :test #'string=))
-           (code (car (last lines))))
-      (and code (string= "200" (string-trim " " code))))))
+#+sbcl (require :sb-md5)
+
+(defun file-md5 (path)
+  "Lowercase hex md5 of the file at PATH."
+  #+sbcl
+  (format nil "~(~{~2,'0x~}~)" (coerce (sb-md5:md5sum-file path) 'list))
+  #+dotcl
+  (let ((hasher (dotnet:static "System.Security.Cryptography.MD5" "Create"))
+        (bytes (with-open-file (s path :element-type '(unsigned-byte 8))
+                 (let ((b (make-array (file-length s) :element-type '(unsigned-byte 8))))
+                   (read-sequence b s)
+                   b))))
+    (string-downcase
+     (dotnet:static "System.Convert" "ToHexString"
+                    (dotnet:invoke hasher "ComputeHash" bytes))))
+  #-(or sbcl dotcl)
+  (error "no md5 on this implementation"))
+
+(defun download (url path)
+  "Fetch URL into PATH; true when curl succeeded.  -f makes a 404 a failure."
+  (when (probe-file path) (delete-file path))
+  (nth-value 1 (run-command "curl" (list "-sfL" "-o" (uiop:native-namestring path) url))))
 
 (defun check-published-urls ()
-  "Every URL any published releases.txt names must still answer 200."
-  (let ((seen (make-hash-table :test 'equal))
+  "Every URL any published releases.txt names must still be downloadable, and
+its size and md5 must be the ones every line naming it records."
+  (let ((assets (make-hash-table :test 'equal))
+        (temp (merge-pathnames "validate-asset.tmp" (uiop:temporary-directory)))
         (checked 0))
-    (dolist (pair (release-url-lines))
-      (destructuring-bind (version url) pair
-        (unless (gethash url seen)
-          (setf (gethash url seen) t)
-          (incf checked)
-          (unless (url-ok-p url)
-            (fail "dist ~a: release asset missing: ~a" version url)))))
-    (format t "~&checked ~d release URL~:p~%" checked)))
+    (dolist (line (release-lines))
+      (destructuring-bind (version url size md5) line
+        (multiple-value-bind (actual seen) (gethash url assets)
+          (unless seen
+            (incf checked)
+            (setf actual (and (download url temp)
+                              (cons (with-open-file (s temp :element-type '(unsigned-byte 8))
+                                      (file-length s))
+                                    (file-md5 temp)))
+                  (gethash url assets) actual))
+          (cond ((null actual)
+                 (fail "dist ~a: release asset missing: ~a" version url))
+                ((not (eql size (car actual)))
+                 (fail "dist ~a: ~a: releases.txt says size ~a, the asset is ~a"
+                       version url size (car actual)))
+                ((not (string-equal md5 (cdr actual)))
+                 (fail "dist ~a: ~a: releases.txt says md5 ~a, the asset is ~a"
+                       version url md5 (cdr actual)))))))
+    (when (probe-file temp) (delete-file temp))
+    (format t "~&checked ~d release asset~:p~%" checked)))
 
 ;;; ---------------------------------------------------------------- schema
 
