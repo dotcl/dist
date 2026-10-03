@@ -455,4 +455,18 @@
            failing to loading. Its tests pass 462 of 567 on dotcl; the rest are
            dotcl bugs (GO to a tag of an enclosing TAGBODY, SETF of
            ROW-MAJOR-AREF on a string). SBCL 2.6.8 passes 566 of 567 with the
-           patch, the other one being a package lock in the test file.")))
+           patch, the other one being a package lock in the test file.")
+
+  (:lib "cl-environments"
+   :upstream "alex-gutev/cl-environments"
+   :disposition :fork-only
+   :ref ("dotcl/cl-environments" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream pull request merges and a quicklisp dist ships the merged version"
+   :notes "SPECIALP asks dotcl's compiler whether a variable is globally special
+           instead of compiling a small lambda per variable. The answer is the
+           one the compiler uses when it compiles a binding of the variable,
+           including variables declared special earlier in the file being
+           compiled. Walking generic-cl calls SPECIALP some 60,000 times, and
+           each COMPILE costs about half a millisecond on dotcl. One commit on
+           upstream master (f9ef641), the commit the stock dist ships.")))
