@@ -1,7 +1,7 @@
 name: dotcl
-version: 2026-10-03
-system-index-url: https://dotcl.github.io/dist/dotcl/2026-10-03/systems.txt
-release-index-url: https://dotcl.github.io/dist/dotcl/2026-10-03/releases.txt
+version: 2026-10-04
+system-index-url: https://dotcl.github.io/dist/dotcl/2026-10-04/systems.txt
+release-index-url: https://dotcl.github.io/dist/dotcl/2026-10-04/releases.txt
 archive-base-url: https://github.com/dotcl/dist/releases/download/
-canonical-distinfo-url: https://dotcl.github.io/dist/dotcl/2026-10-03/distinfo.txt
+canonical-distinfo-url: https://dotcl.github.io/dist/dotcl/2026-10-04/distinfo.txt
 distinfo-subscription-url: https://dotcl.github.io/dist/dotcl.txt

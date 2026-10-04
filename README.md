@@ -144,7 +144,7 @@ Each entry is a plist:
 |---|---|
 | `:lib` | library name, as the distribution knows it |
 | `:upstream` | `owner/repo` of the upstream project |
-| `:upstream-host` | `:github` (default), `:codeberg`, or `:sourceforge` |
+| `:upstream-host` | `:github` (default), `:codeberg`, `:kpe-git` or `:sourceforge` |
 | `:disposition` | see below |
 | `:ref` | where the dotcl support code lives *now* — `:upstream-default`, `("owner/repo" :branch "name" \| :tag "name" \| :commit "sha")`, or for a `:patched` entry `(:upstream :commit "sha")` |
 | `:patches` | `:patched` only: patch files under `patches/<lib>/`, applied in order on top of the `:ref` commit |

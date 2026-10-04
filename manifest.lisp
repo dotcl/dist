@@ -407,9 +407,10 @@
            the patch imports it from there, as the other implementations do from
            theirs, and adds dotcl test data. One commit on the commit the stock
            dist ships (8a4d09c). The library, lichat-protocol and
-           lichat-serverlib go from failing to loading. Its own tests run 17, 10
-           fail on dotcl: those are gaps in dotcl's nickname handling, not in
-           the patch. SBCL 2.6.8 still loads the branch and passes 18 of 18.")
+           lichat-serverlib go from failing to loading. Its own tests run 17 and
+           pass 17 on dotcl 0.1.32 (an earlier dotcl failed 10, gaps in its
+           nickname handling that are since fixed). SBCL 2.6.8 still loads the
+           branch and passes 18 of 18.")
 
   (:lib "fset"
    :upstream "slburson/fset"
@@ -452,10 +453,10 @@
            joins the features that push :SERIES-ANSI, imports COMPILER-LET from
            DOTCL-CLTL2 and gets the GENERATOR deftype, the same three lines SBCL
            has. One commit on upstream master (da9061b). series goes from
-           failing to loading. Its tests pass 462 of 567 on dotcl; the rest are
-           dotcl bugs (GO to a tag of an enclosing TAGBODY, SETF of
-           ROW-MAJOR-AREF on a string). SBCL 2.6.8 passes 566 of 567 with the
-           patch, the other one being a package lock in the test file.")
+           failing to loading. Its tests pass 567 of 567 on dotcl 0.1.32
+           (the test file prompts for a scratch file name unless TEST-FILE is
+           set first). SBCL 2.6.8 passes 566 of 567 with the patch, the other
+           one being a package lock in the test file.")
 
   (:lib "cl-environments"
    :upstream "alex-gutev/cl-environments"
@@ -469,4 +470,125 @@
            including variables declared special earlier in the file being
            compiled. Walking generic-cl calls SPECIALP some 60,000 times, and
            each COMPILE costs about half a millisecond on dotcl. One commit on
-           upstream master (f9ef641), the commit the stock dist ships.")))
+           upstream master (f9ef641), the commit the stock dist ships.")
+
+  (:lib "static-vectors"
+   :upstream "sionescu/static-vectors"
+   :disposition :fork-only
+   :ref ("dotcl/static-vectors" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream pull request merges and a quicklisp dist ships the merged version"
+   :notes "Adds src/impl-dotcl.lisp and one :if-feature line in the .asd, the way
+           every other backend is wired; no existing backend is touched. A static
+           vector on dotcl is an ordinary specialized vector whose .NET backing
+           array is pinned (DOTCL:MAKE-PINNED-VECTOR), so AREF works on the Lisp
+           side and DOTCL:PINNED-VECTOR-ADDRESS is a pointer that stays valid until
+           FREE-STATIC-VECTOR (DOTCL:UNPIN-VECTOR). Elements are stored at the width
+           C expects, (unsigned-byte 32) and (signed-byte 8/16) included; element
+           types without a fixed-width layout are refused. :ALIGNMENT is refused,
+           as on every implementation other than SBCL on Unix.
+
+           Needs a dotcl that exports MAKE-PINNED-VECTOR; on an older dotcl the
+           reader stops at load on the unexported symbol, before anything runs. The
+           static-vectors test suite passes 30 of 30 checks on dotcl 0.1.32.")
+
+  (:lib "millet"
+   :upstream "hyotang666/millet"
+   :disposition :fork-only
+   :ref ("dotcl/millet" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream pull request merges and a quicklisp dist ships the merged version"
+   :notes "Adds src/dotcl.lisp and one :if-feature line in millet.asd, the way
+           every other implementation is wired: GLOBAL-SYMBOL-P on
+           DOTCL-CLTL2:VARIABLE-INFORMATION, LAMBDA-LIST on
+           DOTCL:FUNCTION-LAMBDA-LIST and TYPE-EXPAND on DOTCL:TYPEXPAND; the rest
+           keeps the defaults in default.lisp. One commit on upstream master
+           (b20a41c), the commit the stock dist ships. jingoh goes from failing
+           (TYPE-EXPAND not implemented) to loading. millet's own spec runs to the
+           end on dotcl 0.1.32: 65 checks, 3 fail, all in LAMBDA-LIST, where
+           DOTCL:FUNCTION-LAMBDA-LIST returns NIL for an anonymous lambda. That is
+           fixed in dotcl itself, so the spec passes 65 of 65 from the next dotcl
+           release.")
+
+  (:lib "cl-store"
+   :upstream "skypher/cl-store"
+   :disposition :fork-only
+   :ref ("dotcl/cl-store" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream pull request merges and a quicklisp dist ships the merged version"
+   :notes "A dotcl backend: dotcl is added to the implementation lists in
+           cl-store.asd, package.lisp (the MOP symbols come from DOTCL-MOP, the
+           same fifteen SBCL imports) and utils.lisp (structure slots), and
+           dotcl/custom.lisp stores special floats and structures. One commit on
+           upstream master (adb52a1), the tree the 2023-02-14 quicklisp release
+           was cut from. Without it the system refuses to load. The test suite
+           passes 115 of 115 on dotcl 0.1.32.")
+
+  (:lib "ironclad"
+   :upstream "sharplispers/ironclad"
+   :disposition :fork-only
+   :ref ("dotcl/ironclad" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream pull request merges and a quicklisp dist ships the merged version"
+   :notes "Not needed to load: stock ironclad runs on dotcl. The patch turns on
+           :ironclad-fast-mod32-arithmetic and :ironclad-fast-mod64-arithmetic
+           for dotcl in IRONCLAD-IMPLEMENTATION-FEATURES, which selects the
+           modular-arithmetic macros that fold the mask into the operation.
+           Four lines on the commit the stock v0.61 release was cut from
+           (d4fe172); it also applies to upstream master. The test suite passes
+           468 of 468 on dotcl either way, and the whole run is about a third
+           shorter with the patch (106 s to 72 s measured once on one machine;
+           SCRYPTKDF3 is the test that moves).")
+
+  (:lib "external-program"
+   :upstream "sellout/external-program"
+   :disposition :fork-only
+   :ref ("dotcl/external-program" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream pull request merges and a quicklisp dist ships the merged version"
+   :notes "src/dotcl.lisp implements START, RUN, the PROCESS-* accessors and
+           SIGNAL-PROCESS on dotcl's own process functions (DOTCL:LAUNCH-PROCESS and
+           friends), going through /usr/bin/env on Unix as the SBCL backend does,
+           with a structure wrapped around the process because dotcl process
+           objects have no Lisp type. Not supported: signals other than 9 and 15,
+           :ERROR :OUTPUT, a Lisp stream other than a file for :INPUT/:OUTPUT,
+           status hooks. The .asd and the two default methods list dotcl. One
+           commit on upstream master (8a10db2), the commit the stock dist ships.
+           The fiveam suite passes 31 of 31 on dotcl 0.1.32 on macOS. On Windows
+           ARM64 three checks fail, the same three that fail on SBCL there: passing
+           an environment and changing the directory.")
+
+  (:lib "hunchentoot"
+   :upstream "edicl/hunchentoot"
+   :disposition :fork-only
+   :ref ("dotcl/hunchentoot" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream pull request merges and a quicklisp dist ships the merged version"
+   :notes "SET-TIMEOUTS gets a dotcl arm that sets ReceiveTimeout and SendTimeout
+           on the Socket under usocket's TcpClient. Without it the listener thread
+           dies on the first connection with OPERATION-NOT-IMPLEMENTED. The catch-all
+           arm is unchanged apart from listing dotcl, so every other
+           implementation behaves as before. One commit on upstream master (65a3a3c,
+           newer than the v1.3.1 release the stock dist ships); set-timeouts.lisp is
+           the same file in v1.3.1. An easy-acceptor serves a GET (200) and a missing
+           page (404) on dotcl 0.1.32; the library's own test directory was not run.")
+
+  (:lib "clsql"
+   :upstream "clsql"
+   :upstream-host :kpe-git
+   :disposition :fork-only
+   :ref ("dotcl/clsql" :branch "dotcl")
+   :pr nil
+   :retire-when "the patch merges upstream and a quicklisp dist ships the merged version"
+   :notes "Upstream is http://git.kpe.io/clsql.git, which has no pull requests; the
+           change would go to the maintainers as a patch, and the dotcl repository is
+           an ordinary repository, not a GitHub fork. dotcl joins the implementations
+           that use the MOP from DOTCL-MOP, SBCL's finalize-inheritance key-slot
+           method, WITHOUT-INTERRUPTS as a plain progn and weak hash tables by
+           :WEAKNESS :VALUE. Like ECL and ABCL it has no LOOP-based path for
+           RECORD/TUPLE iteration. One commit on upstream master (2c2a20b). Loading
+           needs the cffi entry of this dist (its uffi-compat GETENV), since
+           clsql.asd asks for UFFI. sqlite3 needs :CLSQL-CFFI on *FEATURES*; with it
+           clsql-uffi and clsql-sqlite3 load and an in-memory sqlite3 database
+           creates, inserts and selects on dotcl 0.1.32. The clsql-tests suite needs
+           database servers and was not run.")))
