@@ -90,6 +90,17 @@
            and :void questions, not loading. Measured on dotcl 0.1.27, ARM64
            Windows, with the fsbv, grovel and test-asdf files left out.
 
+           Two more commits for dotcl. Memory access, size and alignment of :long
+           and :unsigned-long now use the same per-OS width the call path already
+           used (4 bytes on Windows, 8 elsewhere); before, they were 4 bytes on
+           every OS, so on Linux and macOS a struct with a long or size_t field
+           was allocated too small (cl-yaml crashed inside libyaml). And a libffi
+           call whose argument slot would hold a value instead of its address
+           (a :bool passed by value) now signals LIBFFI-ERROR instead of ending
+           the process. With dotcl 0.1.32 the cffi test suite now runs to the
+           end on macOS and on Windows ARM64 and x64; no test fails that passed
+           before.
+
            Upstream PR not filed yet.")
 
   (:lib "trivial-cltl2"
@@ -216,9 +227,9 @@
 
   (:lib "cl+ssl"
    :upstream "cl-plus-ssl/cl-plus-ssl"
-   :disposition :fork-only
+   :disposition :upstream-pr-open
    :ref ("dotcl/cl-plus-ssl" :branch "dotcl")
-   :pr nil
+   :pr "cl-plus-ssl/cl-plus-ssl#199"
    :retire-when "an upstream PR merges and reaches the stock distribution"
    :notes "One form in reload.lisp, and nothing in it is dotcl-specific. The
            Windows library-name list knew the OpenSSL 3 and 1.1 DLLs only under
@@ -471,6 +482,26 @@
            compiled. Walking generic-cl calls SPECIALP some 60,000 times, and
            each COMPILE costs about half a millisecond on dotcl. One commit on
            upstream master (f9ef641), the commit the stock dist ships.")
+
+  (:lib "metatilities"
+   :upstream "hraban/metatilities"
+   :disposition :fork-only
+   :ref ("dotcl/metatilities" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream pull request merges and a quicklisp dist ships the merged version"
+   :notes "Adds a dotcl port, dev/dotcl/, and selects it in the .asd the way the
+           other implementations' ports are selected. Without it dotcl gets
+           dev/unsupported/, whose generic-lisp warns at compile time, and with
+           ASDF's compile-file failure behaviour set to :error (as SBCL has it)
+           metatilities and everything that loads it stop. The port defines what
+           the OpenMCL port defines: quit, bytes allocated, GC time (the .NET GC's
+           total pause duration), collecting garbage (DOTCL:GC), the terminal
+           beep, and the terminal questions for choosing a file, a new file, a
+           directory and an item. With dotcl 0.1.32, metatilities, reblocks and
+           reblocks-parenscript load with failures as errors, and metatilities'
+           tests pass (lift, 6 tests). The upstream repository last changed in
+           2017; Quicklisp names it gwkkwg/metatilities, which GitHub forwards to
+           hraban/metatilities.")
 
   (:lib "static-vectors"
    :upstream "sionescu/static-vectors"
