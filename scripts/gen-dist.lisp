@@ -193,6 +193,33 @@ that silently goes stale."
   ".asd files that could not be read. Named rather than counted so a run that
 loses metadata says which files it lost it for.")
 
+(defun dependency-names (system)
+  (remove nil
+          (mapcar (lambda (dep)
+                    (typecase dep
+                      (string dep)
+                      (symbol (string-downcase dep))
+                      (t nil)))
+                  (asdf:system-depends-on system))))
+
+(defun system-dependencies (name defined)
+  "NAME's dependencies for systems.txt. A dependency on a package-inferred
+secondary system of the same primary (graph on graph/graph) is replaced by
+that system's own dependencies: such a system is not in DEFINED, so it has no
+systems.txt line, and the client stops with \"System not found\" on it."
+  (let ((primary (asdf:primary-system-name name))
+        (seen '())
+        (out '()))
+    (labels ((walk (dep)
+               (unless (member dep seen :test #'string=)
+                 (push dep seen)
+                 (if (and (string= (asdf:primary-system-name dep) primary)
+                          (not (member dep defined :test #'string=)))
+                     (mapc #'walk (dependency-names (asdf:find-system dep)))
+                     (push dep out)))))
+      (mapc #'walk (dependency-names (asdf:find-system name))))
+    (nreverse out)))
+
 (defun systems-in-asd (dir asd)
   "The systems an .asd defines, as (name . dependencies).
 
@@ -209,20 +236,16 @@ read-time conditionals and #. all mean the text is not the truth."
           ;; file already pulled in as someone else's dependency registers
           ;; nothing new the second time — which dropped cffi and
           ;; trivial-features themselves from an earlier version of this.
-          (dolist (name (asdf:registered-systems))
-            (let ((system (asdf:find-system name nil)))
-              (when (and system
-                         (equal (namestring (or (asdf:system-source-file system) ""))
-                                (namestring path)))
-                (push (cons name
-                            (remove nil
-                                    (mapcar (lambda (dep)
-                                              (typecase dep
-                                                (string dep)
-                                                (symbol (string-downcase dep))
-                                                (t nil)))
-                                            (asdf:system-depends-on system))))
-                      result)))))
+          (let ((defined
+                  (remove-if-not
+                   (lambda (name)
+                     (let ((system (asdf:find-system name nil)))
+                       (and system
+                            (equal (namestring (or (asdf:system-source-file system) ""))
+                                   (namestring path)))))
+                   (asdf:registered-systems))))
+            (dolist (name defined)
+              (push (cons name (system-dependencies name defined)) result))))
       (error (condition)
         (push asd *skipped-asds*)
         (format *error-output* "~&;; WARNING: cannot read ~a: ~a~%" asd condition)))
