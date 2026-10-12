@@ -101,6 +101,14 @@
            end on macOS and on Windows ARM64 and x64; no test fails that passed
            before.
 
+           Two more commits. MAKE-SHAREABLE-BYTE-VECTOR returns a pinned vector
+           and WITH-POINTER-TO-VECTOR-DATA hands out its own address, so foreign
+           writes show in the vector inside the body and the address stays valid
+           after it; other vectors are still copied in and written back. Pinned
+           vectors are told apart with DOTCL:PINNED-VECTOR-P, which needs dotcl
+           0.1.33 or later. With dotcl 0.1.33 on macOS a foreign memset through
+           WITH-POINTER-TO-VECTOR-DATA fills both a shareable and a plain vector.
+
            Upstream PR not filed yet.")
 
   (:lib "trivial-cltl2"
@@ -602,7 +610,8 @@
            implementation behaves as before. One commit on upstream master (65a3a3c,
            newer than the v1.3.1 release the stock dist ships); set-timeouts.lisp is
            the same file in v1.3.1. An easy-acceptor serves a GET (200) and a missing
-           page (404) on dotcl 0.1.32; the library's own test directory was not run.")
+           page (404) on dotcl 0.1.32; the library's own test directory was not run.
+           File uploads need the rfc2388 entry of this dist to keep binary bytes.")
 
   (:lib "clsql"
    :upstream "clsql"
@@ -622,4 +631,135 @@
            clsql.asd asks for UFFI. sqlite3 needs :CLSQL-CFFI on *FEATURES*; with it
            clsql-uffi and clsql-sqlite3 load and an in-memory sqlite3 database
            creates, inserts and selects on dotcl 0.1.32. The clsql-tests suite needs
-           database servers and was not run.")))
+           database servers and was not run.")
+
+  (:lib "rfc2388"
+   :upstream "jdz/rfc2388"
+   :disposition :fork-only
+   :ref ("dotcl/rfc2388" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream pull request merges and a quicklisp dist ships the merged version"
+   :notes "Lists dotcl among the implementations that open the file an uploaded
+           part is saved to with an explicit external format, and gives it
+           '(:latin-1 :newline :lf). Without it the file is opened in dotcl's
+           default text format and an uploaded binary does not come back byte
+           for byte through hunchentoot: bytes above 127 are encoded as UTF-8 and
+           line endings follow the platform. Two commits on upstream master
+           (591bcf7). With dotcl 0.1.33 on macOS a 1284-byte upload holding every
+           byte value comes back identical through hunchentoot; with the stock
+           rfc2388 it comes back as 1924 bytes.")
+
+  (:lib "chipz"
+   :upstream "sharplispers/chipz"
+   :disposition :upstream-pr-open
+   :ref ("dotcl/chipz" :branch "dotcl")
+   :pr "sharplispers/chipz#14"
+   :retire-when "PR 14 merges and a quicklisp dist ships the merged version"
+   :notes "Builds the streaming decompressor on dotcl's Gray streams (DOTCL-GRAY)
+           instead of stream-fallback.lisp: the .asd pushes the gray-streams
+           feature on dotcl, stream.lisp has dotcl arms for the three class and
+           generic function variables and joins the SBCL and CMUCL form of
+           STREAM-READ-SEQUENCE, and the tests run external programs through
+           uiop:run-program. One commit on upstream master (4ce0bc5).")
+
+  (:lib "trivial-octet-streams"
+   :upstream "sharplispers/trivial-octet-streams"
+   :disposition :upstream-pr-open
+   :ref ("dotcl/trivial-octet-streams" :branch "dotcl")
+   :pr "sharplispers/trivial-octet-streams#3"
+   :retire-when "PR 3 merges and a quicklisp dist ships the merged version"
+   :notes "dotcl arms for the Gray stream classes and generic functions, from
+           DOTCL-GRAY. Without them the library signals \"octet streams not
+           supported in this implementation\" while loading. One commit on
+           upstream master (71b0063).")
+
+  (:lib "yason"
+   :upstream "phmarek/yason"
+   :disposition :upstream-pr-open
+   :ref ("dotcl/yason" :branch "dotcl")
+   :pr "phmarek/yason#89"
+   :retire-when "PR 89 merges and a quicklisp dist ships the merged version"
+   :notes "dotcl strings hold UTF-16 code units, as CMUCL's do, so dotcl takes
+           CMUCL's side: a \\u escape outside the BMP is parsed into its two
+           surrogate characters, and one ESCAPE-STRING-TO-STREAM, shared by CMUCL
+           and dotcl, pairs the surrogates up again on output. That function
+           consults the replacement table first, as the other implementations
+           do, so on CMUCL a newline is now written as \\n rather than \\u000A.
+           One commit on upstream master (0c84b29).")
+
+  (:lib "xmls"
+   :upstream "rpgoldman/xmls"
+   :disposition :upstream-pr-open
+   :ref ("dotcl/xmls" :branch "dotcl")
+   :pr "rpgoldman/xmls#20"
+   :retire-when "PR 20 merges and a quicklisp dist ships the merged version"
+   :notes "The library itself loads on dotcl unchanged; only the test op is
+           gated by implementation. dotcl is added to that list, and the test
+           reads its command-line arguments with dotcl:command-line-arguments.
+           One commit on the release branch (310ba84), which is what quicklisp
+           builds xmls from.")
+
+  (:lib "graph"
+   :upstream "eschulte/graph"
+   :disposition :fork-only
+   :ref ("dotcl/graph" :branch "dotcl")
+   :pr nil
+   :retire-when "the change reaches upstream and a quicklisp dist ships it"
+   :notes "dotcl's MAKE-HASH-TABLE takes :HASH-FUNCTION with any two-argument
+           test, so the edge hash tables and COPY-HASH take the CCL and LispWorks
+           branch. Without it they signal \"unsupport lisp distribution\". One
+           commit on upstream master (451d0a2). No pull request: the open PR 12
+           touches the same lines for Allegro and would conflict, and nothing has
+           been merged upstream since 2022.")
+
+  (:lib "introspect-environment"
+   :upstream "Bike/introspect-environment"
+   :disposition :fork-only
+   :ref ("dotcl/introspect-environment" :branch "dotcl")
+   :pr nil
+   :retire-when "the change reaches upstream and a quicklisp dist ships it"
+   :notes "Imports DOTCL:TYPEXPAND and DOTCL:TYPEXPAND-1, which have SB-EXT's
+           contract, as SBCL and Clasp import theirs, and keeps the unsupported
+           stubs in default.lisp from replacing them. One commit on upstream
+           master (69a50ac). No pull request: the open PRs 9 and 10 (ECL,
+           CL-Amiga) change the same line of default.lisp and would conflict.")
+
+  (:lib "plexippus-xpath"
+   :upstream "sharplispers/xpath"
+   :disposition :fork-only
+   :ref ("dotcl/xpath" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream pull request merges and a quicklisp dist ships the merged version"
+   :notes "dotcl's double floats do not trap, so dotcl takes xnum-ieee.lisp as
+           SBCL does, with dotcl arms for what it needs from the implementation:
+           no traps to mask, NaN and infinity tests from System.Double, plain
+           division, LONG-TO-DOUBLE from the dotcl-float module, and FMOD
+           computed exactly on rationals. The IEEE tests read their infinities
+           from two variables set per implementation. One commit on upstream
+           master (d364da6). Pull request not filed yet: the patch is larger than
+           the others and leans on dotcl's own modules.")
+
+  (:lib "exit-hooks"
+   :upstream "ailisp/exit-hooks"
+   :disposition :fork-only
+   :ref ("dotcl/exit-hooks" :branch "dotcl")
+   :pr nil
+   :retire-when "the change reaches upstream and a quicklisp dist ships it"
+   :notes "Without a dotcl arm the library signals an error while loading. The
+           hooks are kept in a list that a System.AppDomain ProcessExit handler
+           runs. One commit on upstream master (78050f4). No pull request:
+           upstream has had no activity since 2017 and an open PR from 2021 has
+           no answer.")
+
+  (:lib "clack-handler-kestrel"
+   :upstream "dotcl/clack-handler-kestrel"
+   :disposition :fork-only
+   :ref ("dotcl/clack-handler-kestrel" :branch "main")
+   :pr nil
+   :retire-when "quicklisp carries clack-handler-kestrel"
+   :notes "Not a fork: a Clack handler written for dotcl, serving on ASP.NET
+           Core's Kestrel, that is not in quicklisp. It is carried here so that
+           (ql:quickload '(\"clack\" \"clack-handler-kestrel\")) works. It runs
+           only on dotcl and needs the ASP.NET Core shared framework. With dotcl
+           0.1.33 on macOS, clackup with :server :kestrel answers a GET, echoes a
+           binary POST byte for byte, and stops.")))
