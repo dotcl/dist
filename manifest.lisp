@@ -109,6 +109,12 @@
            0.1.33 or later. With dotcl 0.1.33 on macOS a foreign memset through
            WITH-POINTER-TO-VECTOR-DATA fills both a shareable and a plain vector.
 
+           One more commit. LOAD-FOREIGN-LIBRARY closes a library before it loads
+           it again and the new mapping can land at another address, but the
+           cache of function addresses kept the old one, so the next
+           FOREIGN-FUNCALL jumped into unmapped memory (a SIGSEGV seen with iolib).
+           The cache is now forgotten when a library is loaded or closed.
+
            Upstream PR not filed yet.")
 
   (:lib "trivial-cltl2"
@@ -180,8 +186,11 @@
            INTERRUPT-THREAD is delivered the next time the target thread blocks
            rather than preempting a running computation, which is as much as
            .NET allows; that is enough for the portable WITH-TIMEOUT. Acquiring
-           a lock with a :timeout is the one gap and signals NOT-IMPLEMENTED.
-           Both upstream test suites pass. Upstream PR not filed yet.")
+           a lock with a :timeout goes through DOTCL:ACQUIRE-LOCK, which takes
+           the timeout in seconds as its third argument; as on SBCL the timeout
+           applies only when waiting, and WITH-LOCK-HELD skips its body and
+           returns NIL when it expires. Both upstream test suites pass.
+           Upstream PR not filed yet.")
 
   (:lib "atomics"
    :upstream "shinmera/atomics"
@@ -350,22 +359,24 @@
    :ref ("dotcl/usocket" :branch "dotcl")
    :pr "usocket/usocket#144"
    :retire-when "PR 144 merges and a quicklisp dist ships the merged version"
-   :notes "A backend on System.Net.Sockets: TCP client and server, UDP, name
-           lookup, and WAIT-FOR-INPUT over Socket.Select. Stock usocket loads on
-           dotcl and does nothing, since the portable layer is all it has and
-           every socket-*-internal is left undefined, so the failure is a
-           run-time UNDEFINED-FUNCTION rather than a load error.
+   :notes "A dotcl backend that does what the SBCL backend does with
+           sb-bsd-sockets: it calls dotcl's dotcl-bsd-sockets module and maps
+           that module's conditions onto usocket's. Name resolution, address
+           families, the error table, connect timeouts, UDP and select all live
+           in the module, which also takes IP literals such as \"0.0.0.0\" and
+           \"::\" without asking the resolver. option.lisp gets the
+           reuse-address, broadcast, tcp-nodelay and tcp-keepalive options for
+           dotcl through the module's sockopt accessors. Needs dotcl 0.1.34 or
+           later, which is the first release that ships dotcl-bsd-sockets.
+           Stock usocket loads on dotcl and does nothing, since the portable
+           layer is all it has and every socket-*-internal is left undefined,
+           so the failure is a run-time UNDEFINED-FUNCTION rather than a load
+           error.
 
-           Errors are mapped from SocketException's SocketErrorCode, whose
-           numbers are the Winsock ones on every platform, and never from the
-           message text, which .NET localises. A failure does not always arrive
-           as a SocketException -- NetworkStream wraps it in an IOException, a
-           connect that failed while its task was awaited in an
-           AggregateException -- so the InnerException chain is walked.
-
-           PR 144 filed 2026-08-19: one new file, four #+dotcl clauses in
-           option.lisp and one .asd entry, with no existing backend touched.
-                   Upstream has been quiet since 2026-05.")
+           PR 144 filed 2026-08-19 and brought up to date with the branch on
+           2026-10-24: one new file, four #+dotcl clauses in option.lisp and one
+           .asd entry, with no existing backend touched. Upstream has been quiet
+           since 2026-05.")
 
   (:lib "slime"
    :upstream "slime/slime"
@@ -611,7 +622,12 @@
            newer than the v1.3.1 release the stock dist ships); set-timeouts.lisp is
            the same file in v1.3.1. An easy-acceptor serves a GET (200) and a missing
            page (404) on dotcl 0.1.32; the library's own test directory was not run.
-           File uploads need the rfc2388 entry of this dist to keep binary bytes.")
+           File uploads need the rfc2388 entry of this dist to keep binary bytes.
+
+           The dotcl arm now sets the timeouts through dotcl-bsd-sockets' sockopt
+           accessors, as the ECL arm does with sb-bsd-sockets, because the usocket
+           entry of this dist hands out dotcl-bsd-sockets socket objects (dotcl
+           0.1.34 or later). The two entries go together.")
 
   (:lib "clsql"
    :upstream "clsql"
@@ -664,40 +680,39 @@
 
   (:lib "trivial-octet-streams"
    :upstream "sharplispers/trivial-octet-streams"
-   :disposition :upstream-pr-open
-   :ref ("dotcl/trivial-octet-streams" :branch "dotcl")
+   :disposition :upstream-merged
+   :ref :upstream-default
    :pr "sharplispers/trivial-octet-streams#3"
-   :retire-when "PR 3 merges and a quicklisp dist ships the merged version"
+   :retire-when "a quicklisp dist ships a trivial-octet-streams that includes PR 3"
    :notes "dotcl arms for the Gray stream classes and generic functions, from
            DOTCL-GRAY. Without them the library signals \"octet streams not
-           supported in this implementation\" while loading. One commit on
-           upstream master (71b0063).")
+           supported in this implementation\" while loading. PR 3 merged
+           2026-10-12 as one commit.")
 
   (:lib "yason"
    :upstream "phmarek/yason"
-   :disposition :upstream-pr-open
-   :ref ("dotcl/yason" :branch "dotcl")
+   :disposition :upstream-merged
+   :ref :upstream-default
    :pr "phmarek/yason#89"
-   :retire-when "PR 89 merges and a quicklisp dist ships the merged version"
+   :retire-when "a quicklisp dist ships a yason that includes PR 89"
    :notes "dotcl strings hold UTF-16 code units, as CMUCL's do, so dotcl takes
            CMUCL's side: a \\u escape outside the BMP is parsed into its two
            surrogate characters, and one ESCAPE-STRING-TO-STREAM, shared by CMUCL
            and dotcl, pairs the surrogates up again on output. That function
            consults the replacement table first, as the other implementations
            do, so on CMUCL a newline is now written as \\n rather than \\u000A.
-           One commit on upstream master (0c84b29).")
+           PR 89 merged 2026-10-17 as one commit.")
 
   (:lib "xmls"
    :upstream "rpgoldman/xmls"
-   :disposition :upstream-pr-open
-   :ref ("dotcl/xmls" :branch "dotcl")
+   :disposition :upstream-merged
+   :ref :upstream-default
    :pr "rpgoldman/xmls#20"
-   :retire-when "PR 20 merges and a quicklisp dist ships the merged version"
+   :retire-when "a quicklisp dist ships an xmls that includes PR 20"
    :notes "The library itself loads on dotcl unchanged; only the test op is
            gated by implementation. dotcl is added to that list, and the test
            reads its command-line arguments with dotcl:command-line-arguments.
-           One commit on the release branch (310ba84), which is what quicklisp
-           builds xmls from.")
+           PR 20 merged 2026-10-15 into master, two commits.")
 
   (:lib "graph"
    :upstream "eschulte/graph"
@@ -762,4 +777,53 @@
            (ql:quickload '(\"clack\" \"clack-handler-kestrel\")) works. It runs
            only on dotcl and needs the ASP.NET Core shared framework. With dotcl
            0.1.33 on macOS, clackup with :server :kestrel answers a GET, echoes a
-           binary POST byte for byte, and stops.")))
+           binary POST byte for byte, and stops.")
+
+  (:lib "shasht"
+   :upstream "yitzchak/shasht"
+   :disposition :fork-only
+   :ref ("dotcl/shasht" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream pull request merges and a quicklisp dist ships the merged version"
+   :notes "On a host whose characters are 16-bit code units, a \\u escaped
+           surrogate pair has to stay two characters. Upstream does that for
+           CMUCL only, with a #+cmucl arm; everywhere else it combines the pair
+           into one code point, which dotcl and ABCL cannot hold as a character.
+           The branch decides from CHAR-CODE-LIMIT instead and keeps the CMUCL
+           arm. With dotcl 0.1.35 the library's test suite passes 391 of 391 tests
+           (stock: 385 passed, 6 failed, all of them reading a surrogate pair).
+           One commit on upstream master (fb9706e).")
+
+  (:lib "zacl"
+   :upstream "genworks/zacl"
+   :disposition :upstream-merged
+   :ref :upstream-default
+   :pr "genworks/zacl#1"
+   :retire-when "a quicklisp dist ships a zacl that includes PR 1"
+   :notes "PR 1 merged 2026-10-25 on the home repository (gitlab.common-lisp.net
+           dcooper/zacl) and mirrored to GitHub. Adds dotcl-specific.lisp, the
+           compatibility layer's dotcl arm, in the same shape as the EGCL port;
+           the other files are untouched. This entry follows the mirror's
+           default branch because the merge is there and the stock distribution
+           does not have it yet. Pair with the aserve entry. With dotcl 0.1.35
+           zacl-tests runs 21 checks and 19 pass; the two that do not are
+           PREPEND-STREAM and a call to (SETF URI-SCHEME), which is undefined.")
+
+  (:lib "aserve"
+   :upstream "genworks/zaserve"
+   :disposition :upstream-merged
+   :ref :upstream-default
+   :pr "genworks/zaserve#1"
+   :retire-when "a quicklisp dist ships an aserve that includes PR 1"
+   :notes "The Quicklisp project is called aserve and its system is zaserve. PR 1
+           merged 2026-10-25 on the home repository (gitlab.common-lisp.net
+           dcooper/zaserve) and mirrored to GitHub: the platform check accepts
+           dotcl and the hash tables it makes are synchronized. Runs on the zacl
+           entry of this dist. With dotcl 0.1.35 a server publishing a page, an
+           echo of GET and POST data, a missing path (404), a plain file, a
+           43 KB file that comes back byte for byte, a directory, an HTTP/1.0
+           client and twenty repeated requests answers correctly under curl.
+           The system zacl-aserve is a shim for the older portableaserve and
+           still does not load, as before. This entry follows the mirror's default branch
+           because the merge is there and the stock distribution does not have
+           it yet.")))
