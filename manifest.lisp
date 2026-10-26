@@ -295,18 +295,47 @@
    :notes "A backend on System.Net.Http.HttpClient reached through dotcl's dotnet:
            interop, so on dotcl dexador needs neither usocket nor cl+ssl nor cffi;
            the .asd gates those files and dependencies behind (:not :dotcl).
-           HttpClient does TLS, redirects and content decoding itself, which is why
-           the backend is one file rather than a socket stack, and why it is selected
+           HttpClient does TLS and content decoding itself, which is why the
+           backend is one file rather than a socket stack, and why it is selected
            on every OS rather than only on Windows the way winhttp is.
+
+           Redirects are not left to HttpClient: REQUEST follows them, as it does
+           for the usocket backend. :max-redirects counts hops, 301/302/303 turn a
+           non-GET/HEAD request into a GET without a body, and a redirect to another
+           server drops the Authorization, Proxy-Authorization and Cookie headers.
+           :proxy is honoured: an http proxy for http URLs and, through CONNECT,
+           https URLs, with user:password in the proxy URI sent as Basic proxy
+           credentials, and socks5 without authentication. Checked against a real
+           forward proxy (tinyproxy) and an ssh -D SOCKS5 listener, redirect hops
+           included; not checked: https:// proxy URLs, socks5 with a user name and
+           password, environment proxy variables. Set-Cookie lines stay separate
+           for the cookie jar, :want-stream returns a decoding stream, and the
+           retry and ignore restarts are established around each exchange, errors
+           raised by .NET included. Multipart content works.
 
            :use-connection-pool and :keep-alive map onto a cached HttpClient keyed by
            insecure and max-redirects, so .NET's own per-origin pool reuses TCP and
            TLS across requests. A per-request timeout needs a CancellationTokenSource
            because HttpClient.Timeout is per client, not per request.
 
-           Checked against the winhttp backend on SBCL: status, content type and body,
-           a 404 signalling with its status, redirect following, and pooling on and
-           off all agree.")
+           With dotcl 0.1.35 the library's own tests run 126 passed, 0 failed
+           (SBCL 173 of 173; the 47 that do not run on dotcl call the usocket
+           backend directly). Checked against the winhttp backend on SBCL: status,
+           content type and body, a 404 signalling with its status, redirect
+           following, and pooling on and off all agree.")
+
+  (:lib "trivial-arguments"
+   :upstream "shinmera/trivial-arguments"
+   :upstream-host :codeberg
+   :disposition :upstream-merged
+   :ref :upstream-default
+   :pr "shinmera/trivial-arguments#14"
+   :retire-when "a quicklisp dist ships a trivial-arguments that includes pull request 14 and dotcl pulls stock"
+   :notes "Merged upstream as fee967a (pull request 14). Reader conditionals only,
+           in arguments.lisp: a #+dotcl arm that asks DOTCL:FUNCTION-LAMBDA-LIST, and
+           dotcl added to the two feature lists, so the library stops falling back to
+           FUNCTION-LAMBDA-EXPRESSION with a notice. The stock library loads on dotcl
+           but cannot answer for a compiled function.")
 
   (:lib "cl-fad"
    :upstream "edicl/cl-fad"

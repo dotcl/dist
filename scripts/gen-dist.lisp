@@ -3,6 +3,9 @@
 ;;;;   dotcl scripts/gen-dist.lisp                  ; version defaults to today
 ;;;;   DIST_VERSION=2026-07-26-2 dotcl scripts/gen-dist.lisp
 ;;;;
+;;;; Stops before writing anything if a tag or release for the same date already
+;;;; exists on origin (DIST_ALLOW_EXISTING_VERSION=1 overrides, deliberately).
+;;;;
 ;;;; Runs under dotcl on purpose. The system dependencies in systems.txt come
 ;;;; from reading each .asd, so a successful generation also proves dotcl can
 ;;;; read the .asd files of everything the dist ships. (Reading a .asd is not
@@ -260,6 +263,49 @@ read-time conditionals and #. all mean the text is not the truth."
         (declare (ignore sec min hour))
         (format nil "~d-~2,'0d-~2,'0d" year month day))))
 
+(defparameter *releases-api-url*
+  "https://api.github.com/repos/dotcl/dist/releases?per_page=100")
+
+(defun published-tag-names ()
+  "Names of every tag on origin and every release tag on dotcl/dist. Errors if
+either cannot be read: a check that quietly sees nothing would pass."
+  (let ((names '()))
+    (dolist (line (uiop:split-string (run "git" "ls-remote" "--tags" "origin")
+                                     :separator '(#\Newline)))
+      (let ((pos (search "refs/tags/" line)))
+        (when pos
+          (push (string-right-trim "^{}" (subseq line (+ pos (length "refs/tags/"))))
+                names))))
+    (let ((json (run "curl" "-sf" *releases-api-url*))
+          (key "\"tag_name\":\""))
+      (loop with start = 0
+            for pos = (search key json :start2 start)
+            while pos
+            do (let* ((from (+ pos (length key)))
+                      (to (position #\" json :start from)))
+                 (push (subseq json from to) names)
+                 (setf start to))))
+    names))
+
+(defun check-version-unused (version)
+  "Stop if dist-VERSION, or any tag or release of the same date, already exists
+on origin. A second dist on one date is how 2026-10-26-2 happened; saying so in a
+comment did not stop it. Setting DIST_ALLOW_EXISTING_VERSION=1 is the one way
+past this, and it is for a person who has decided to overwrite on purpose."
+  (let* ((date (subseq version 0 (min 10 (length version))))
+         (prefix (format nil "dist-~a" date))
+         (clashes (remove-if-not
+                   (lambda (name)
+                     (and (>= (length name) (length prefix))
+                          (string= prefix name :end2 (length prefix))))
+                   (published-tag-names))))
+    (when clashes
+      (if (uiop:getenv "DIST_ALLOW_EXISTING_VERSION")
+          (format *error-output* "~&;; WARNING: ~{~a~^, ~} already published; continuing because DIST_ALLOW_EXISTING_VERSION is set~%"
+                  (remove-duplicates clashes :test #'string=))
+          (error "~{~a~^, ~} already published on origin for ~a; a dist version is published once. Wait for the next date, or set DIST_ALLOW_EXISTING_VERSION=1 to overwrite on purpose."
+                 (remove-duplicates clashes :test #'string=) date)))))
+
 (defun write-distinfo (stream version)
   (format stream "name: ~a~%" *dist-name*)
   (format stream "version: ~a~%" version)
@@ -349,7 +395,7 @@ so a cached copy stays valid."
 (defun generate ()
   (let* ((manifest (load-manifest))
          (entries (dist-entries manifest))
-         (version (version))
+         (version (progn (check-version-unused (version)) (version)))
          (dir (version-dir version))
          ;; Read before anything is written: the map must not see this run's
          ;; own releases.txt.
