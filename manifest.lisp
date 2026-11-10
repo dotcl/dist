@@ -409,10 +409,10 @@
 
   (:lib "slime"
    :upstream "slime/slime"
-   :disposition :upstream-merged
-   :ref :upstream-default
-   :pr "slime/slime#941"
-   :retire-when "a quicklisp dist ships a slime that includes PR 941"
+   :disposition :fork-only
+   :ref ("dotcl/slime" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream pull request with the two commits below merges and a quicklisp dist ships the merged version"
    :notes "SLIME's swank on dotcl. swank/dotcl.lisp implements the backend
            interfaces on the contrib modules a dotcl release ships: dotcl-socket
            for sockets, dotcl-thread for threads and locks, dotcl-gray for Gray
@@ -435,9 +435,14 @@
 
            PR 941 merged 2026-09-01, unchanged. Upstream master head 4a5b4fb is that
            commit and its tree is identical to the fork branch dist 2026-09-01 shipped,
-           so the source does not change; only the tarball prefix does. The fork owns
-           nothing now and retires with the merge; the entry stays until a stock
-           distribution ships it.")
+           so the backend itself needed no source change. The fork has since taken up
+           again, for the two commits below, which are not upstream yet.
+
+           The fork's dotcl branch carries two commits on top of that backend:
+           the debugger's backtrace, and find-definitions answered from
+           DOTCL:FUNCTION-SOURCE-LOCATION, so that M-. finds the definition of
+           a function the running image has loaded. The entry builds from the
+           branch at 8cddbfad until they are upstream.")
 
   (:lib "sly"
    :upstream "joaotavora/sly"
@@ -454,7 +459,13 @@
 
            Sixty interfaces, ARGLIST included, on the same terms as the slime
            entry. One commit on upstream master, no existing backend touched.
-           PR 717 filed 2026-09-01.")
+           PR 717 filed 2026-09-01.
+
+           The branch has since gained three commits: the control thread recorded
+           before the reader thread is spawned, the debugger's backtrace, and
+           UTF-8 encoding and the process id taken from dotcl's own
+           STRING-TO-OCTETS, OCTETS-TO-STRING and GETPID (so GETPID answers the
+           real process id instead of 0).")
 
   (:lib "trivial-package-local-nicknames"
    :upstream "phoe/trivial-package-local-nicknames"
@@ -767,6 +778,20 @@
            stubs in default.lisp from replacing them. One commit on upstream
            master (69a50ac). No pull request: the open PRs 9 and 10 (ECL,
            CL-Amiga) change the same line of default.lisp and would conflict.")
+
+  (:lib "postmodern"
+   :upstream "marijnh/postmodern"
+   :disposition :fork-only
+   :ref ("dotcl/Postmodern" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream pull request merges and a quicklisp dist ships the merged version"
+   :notes "Two feature-list edits on upstream master (0e4100d), no code touched.
+           cl-postgres.asd lists dotcl among the implementations that take usocket
+           for the socket layer, so the system no longer waits for
+           sb-bsd-sockets. postmodern.asd lists dotcl among the implementations
+           that have a MOP and thread-safe support, which turns on the DAO classes
+           and the per-thread connection handling. The repository defines
+           postmodern, cl-postgres, s-sql, simple-date and the test systems.")
 
   (:lib "plexippus-xpath"
    :upstream "sharplispers/xpath"
