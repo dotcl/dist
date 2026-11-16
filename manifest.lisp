@@ -359,12 +359,20 @@
   (:lib "float-features"
    :upstream "shinmera/float-features"
    :upstream-host :codeberg
-   :disposition :upstream-merged
-   :ref :upstream-default
-   :pr "shinmera/float-features#40"
-   :retire-when "a quicklisp dist ships a float-features that includes PR 40"
+   :disposition :patched
+   :ref (:upstream :commit "ee189527ac587756c231ed3ddb1cb0a7238dc2eb")
+   :patches ("patches/float-features/0001-Exclude-dotcl-from-the-infinity-fallback-feature-lists.patch")
+   :pr nil
+   :retire-when "an upstream float-features includes dotcl in the #-(or ...) fallback lists of infinity.lisp and a quicklisp dist ships it"
    :notes "PR 40 merged 2026-08-13: reader conditionals in float-features.lisp and
            infinity.lisp, plus one .asd line, and no new source file.
+
+           PR 40 left dotcl out of the trailing #-(or ...) fallback list after each
+           constant in infinity.lisp. Where DEFCONSTANT checks its documentation
+           argument, both the dotcl value and the fallback symbol are read, and the
+           symbol becomes the third (documentation) argument: \"the documentation
+           must be a string: MOST-POSITIVE-SHORT-FLOAT\". The patch adds dotcl to
+           the eight lists. Not filed upstream.
 
            The primitives are not in the library. They are dotcl-float, a contrib
            shipped inside dotcl releases since 0.1.23, which reaches

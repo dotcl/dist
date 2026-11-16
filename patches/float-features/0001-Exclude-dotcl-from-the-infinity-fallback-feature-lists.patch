@@ -1,0 +1,86 @@
+From 4e3591b7d8418d5c5e2dbfda6dd904d2d104726b Mon Sep 17 00:00:00 2001
+From: "SANO,Masatoshi" <snmsts@gmail.com>
+Date: Mon, 16 Nov 2026 23:11:38 +0900
+Subject: [PATCH] Exclude dotcl from the infinity fallback feature lists
+
+---
+ infinity.lisp | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/infinity.lisp b/infinity.lisp
+index 52f57a0..38d681c 100644
+--- a/infinity.lisp
++++ b/infinity.lisp
+@@ -11,7 +11,7 @@
+   #+lispworks 1S++0
+   #+allegro (coerce excl:*infinity-single* 'short-float)
+   #+dotcl dotcl-float:+single-float-positive-infinity+
+-  #-(or ccl clasp cmucl ecl mezzano mkcl sbcl lispworks allegro)
++  #-(or ccl clasp cmucl dotcl ecl mezzano mkcl sbcl lispworks allegro)
+   MOST-POSITIVE-SHORT-FLOAT)
+ 
+ (defconstant SHORT-FLOAT-NEGATIVE-INFINITY
+@@ -25,7 +25,7 @@
+   #+lispworks -1S++0
+   #+dotcl dotcl-float:+single-float-negative-infinity+
+   #+allegro (coerce excl:*negative-infinity-single* 'short-float)
+-  #-(or ccl clasp cmucl ecl mezzano mkcl sbcl lispworks allegro)
++  #-(or ccl clasp cmucl dotcl ecl mezzano mkcl sbcl lispworks allegro)
+   MOST-NEGATIVE-SHORT-FLOAT)
+ 
+ (defconstant SINGLE-FLOAT-POSITIVE-INFINITY
+@@ -40,7 +40,7 @@
+   #+sbcl SB-EXT:SINGLE-FLOAT-POSITIVE-INFINITY
+   #+lispworks 1F++0
+   #+dotcl dotcl-float:+single-float-positive-infinity+
+-  #-(or abcl allegro ccl clasp cmucl ecl mezzano mkcl sbcl lispworks)
++  #-(or abcl allegro ccl clasp cmucl dotcl ecl mezzano mkcl sbcl lispworks)
+   MOST-POSITIVE-SINGLE-FLOAT)
+ 
+ (defconstant SINGLE-FLOAT-NEGATIVE-INFINITY
+@@ -55,7 +55,7 @@
+   #+sbcl SB-EXT:SINGLE-FLOAT-NEGATIVE-INFINITY
+   #+dotcl dotcl-float:+single-float-negative-infinity+
+   #+lispworks -1F++0
+-  #-(or abcl allegro ccl clasp cmucl ecl mezzano mkcl sbcl lispworks)
++  #-(or abcl allegro ccl clasp cmucl dotcl ecl mezzano mkcl sbcl lispworks)
+   MOST-NEGATIVE-SINGLE-FLOAT)
+ 
+ (defconstant DOUBLE-FLOAT-POSITIVE-INFINITY
+@@ -70,7 +70,7 @@
+   #+sbcl SB-EXT:DOUBLE-FLOAT-POSITIVE-INFINITY
+   #+dotcl dotcl-float:+double-float-positive-infinity+
+   #+lispworks 1D++0
+-  #-(or abcl allegro ccl clasp cmucl ecl mezzano mkcl sbcl lispworks)
++  #-(or abcl allegro ccl clasp cmucl dotcl ecl mezzano mkcl sbcl lispworks)
+   MOST-POSITIVE-DOUBLE-FLOAT)
+ 
+ (defconstant DOUBLE-FLOAT-NEGATIVE-INFINITY
+@@ -85,7 +85,7 @@
+   #+dotcl dotcl-float:+double-float-negative-infinity+
+   #+sbcl SB-EXT:DOUBLE-FLOAT-NEGATIVE-INFINITY
+   #+lispworks -1D++0
+-  #-(or abcl allegro ccl clasp cmucl ecl mezzano mkcl sbcl lispworks)
++  #-(or abcl allegro ccl clasp cmucl dotcl ecl mezzano mkcl sbcl lispworks)
+   MOST-NEGATIVE-DOUBLE-FLOAT)
+ 
+ (defconstant LONG-FLOAT-POSITIVE-INFINITY
+@@ -98,7 +98,7 @@
+   #+mkcl EXT:LONG-FLOAT-POSITIVE-INFINITY
+   #+sbcl SB-EXT:LONG-FLOAT-POSITIVE-INFINITY
+   #+lispworks 1L++0
+-  #-(or ccl clasp cmucl ecl mezzano mkcl sbcl lispworks)
++  #-(or ccl clasp cmucl dotcl ecl mezzano mkcl sbcl lispworks)
+   MOST-POSITIVE-LONG-FLOAT)
+ 
+ (defconstant LONG-FLOAT-NEGATIVE-INFINITY
+@@ -111,5 +111,5 @@
+   #+dotcl dotcl-float:+double-float-negative-infinity+
+   #+sbcl SB-EXT:LONG-FLOAT-NEGATIVE-INFINITY
+   #+lispworks -1L++0
+-  #-(or ccl clasp cmucl ecl mezzano mkcl sbcl lispworks)
++  #-(or ccl clasp cmucl dotcl ecl mezzano mkcl sbcl lispworks)
+   MOST-NEGATIVE-LONG-FLOAT)
+-- 
+2.56.0
+
