@@ -107,6 +107,10 @@ jobs:
           echo "tarballs to attach:"
           cat uploads.txt
 
+      - name: Toolchain for cffi-libffi (libffi headers, pkg-config, cc)
+        if: steps.decide.outputs.skip == ''
+        run: sudo apt-get install -y build-essential pkg-config libffi-dev
+
       - name: Check the new tarballs load on dotcl
         if: steps.decide.outputs.skip == ''
         run: dotcl scripts/check-loadable.lisp
