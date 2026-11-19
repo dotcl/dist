@@ -276,7 +276,13 @@ either cannot be read: a check that quietly sees nothing would pass."
         (when pos
           (push (string-right-trim "^{}" (subseq line (+ pos (length "refs/tags/"))))
                 names))))
-    (let ((json (run "curl" "-sf" *releases-api-url*))
+    (let ((json (let ((token (or (uiop:getenv "GH_TOKEN") (uiop:getenv "GITHUB_TOKEN"))))
+                  ;; An unauthenticated call from a shared runner IP is rate limited (HTTP 403/429: curl exit 22).
+                  ;; The workflow sets GH_TOKEN; a local run without one keeps the unauthenticated call.
+                  (apply #'run "curl" "-sf"
+                         (append (when (and token (plusp (length token)))
+                                   (list "-H" (format nil "Authorization: Bearer ~a" token)))
+                                 (list *releases-api-url*)))))
           (key "\"tag_name\":\""))
       (loop with start = 0
             for pos = (search key json :start2 start)
