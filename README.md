@@ -33,16 +33,26 @@ hand:
 dotcl scripts/gen-dist.lisp        # version defaults to today's date
 ```
 
-Reading the `.asd` files needs their `:defsystem-depends-on` targets visible to
-asdf. Today that is only alexandria (cffi-libffi, cffi-tests and
-trivial-features-tests ask for it), and the generator does not load quicklisp
-because the quicklisp searcher shadows dist checkouts (sly's own systems
-disappeared when it was loaded). Point `CL_SOURCE_REGISTRY` at an alexandria
-checkout instead:
+Reading the `.asd` files needs their `:defsystem-depends-on` targets, and
+everything those load, visible to asdf. That is more than alexandria:
+aserve/zaserve.asd has `:defsystem-depends-on (:zacl)`, so reading it loads
+zacl and everything zacl depends on that the dist does not ship
+(split-sequence, global-vars, cl-ppcre, quri and its idna / cl-utilities,
+queues, md5, cl-base64, trivial-backtrace, local-time). The generator does not
+load quicklisp because the quicklisp searcher shadows dist checkouts (sly's own
+systems disappeared when it was loaded). `scripts/read-deps.txt` lists those
+systems, each pinned to a commit (git) or an archive md5; fetch them into one
+directory and point `CL_SOURCE_REGISTRY` at it with a recursive `//`:
 
 ```sh
-CL_SOURCE_REGISTRY=/path/to/alexandria/ dotcl scripts/gen-dist.lisp
+scripts/fetch-read-deps.sh /path/to/read-deps
+CL_SOURCE_REGISTRY=/path/to/read-deps// dotcl scripts/gen-dist.lisp
 ```
+
+A system missing from `read-deps.txt` shows up as
+`WARNING: cannot read X.asd: Component :Y not found`, and the systems that
+file defines are left out of the dist (the run says so, and the release
+workflow stops). Add `Y` to `read-deps.txt` and run again.
 
 The run is right when `systems.txt` differs from the previous version only by
 the entries you changed; `diff <(sort docs/dotcl/<prev>/systems.txt) <(sort docs/dotcl/<new>/systems.txt)`

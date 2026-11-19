@@ -1,0 +1,22 @@
+# Systems that gen-dist needs visible while it reads the .asd files, and that the
+# dist does not ship. aserve/zaserve.asd has :defsystem-depends-on (:zacl), so
+# reading it loads zacl and what zacl depends on. They are fetched by
+# scripts/fetch-read-deps.sh into one directory, one directory per system, and
+# CL_SOURCE_REGISTRY points at that directory with a trailing //.
+#
+# kind  directory  url  pin
+#   git: pin is the commit that must be checked out
+#   tgz: pin is the md5 of the archive (the file-md5 column of the Quicklisp
+#        releases.txt the archive was taken from)
+git alexandria        https://gitlab.common-lisp.net/alexandria/alexandria.git        49e82add16cb9f1ffa72c77cd687271247181ff3
+git split-sequence    https://github.com/sharplispers/split-sequence.git              89a10b4d697f03eb32ade3c373c4fd69800a841a
+git global-vars       https://github.com/lmj/global-vars.git                          c749f32c9b606a1457daa47d59630708ac0c266e
+git cl-ppcre          https://github.com/edicl/cl-ppcre.git                           a2ea581c23fdc184168423adbd4b4c1f48d42743
+tgz quri              https://beta.quicklisp.org/archive/quri/2026-01-01/quri-20260101-git.tgz                                      47eae171fde92c6dad63dbb048e78d5a
+tgz queues            https://beta.quicklisp.org/archive/queues/2017-01-24/queues-20170124-git.tgz                                  9b291db09b7385e12515697f1f918e27
+tgz md5               https://beta.quicklisp.org/archive/md5/2021-06-30/md5-20210630-git.tgz                                        ecb1fa8eea6848c2f14fdfeb03d47056
+tgz cl-base64         https://beta.quicklisp.org/archive/cl-base64/2020-10-16/cl-base64-20201016-git.tgz                            f556f7c61f785c84abdc1beb63c906ae
+tgz cl-utilities      https://beta.quicklisp.org/archive/cl-utilities/2010-10-06/cl-utilities-1.2.4.tgz                             c3a4ba38b627448d3ed40ce888048940
+tgz idna              https://beta.quicklisp.org/archive/idna/2012-01-07/idna-20120107-git.tgz                                      85b91a66efe4381bf116cdb5d2b756b6
+tgz trivial-backtrace https://beta.quicklisp.org/archive/trivial-backtrace/2023-02-14/trivial-backtrace-20230214-git.tgz            e4ca5a103fd923b398fd7795b432cbec
+tgz local-time        https://beta.quicklisp.org/archive/local-time/2026-01-01/local-time-20260101-git.tgz                          ff972a7acd3ad241f852b7bb8cab6433
