@@ -77,6 +77,14 @@ jobs:
           LEDGER_CHECK_NETWORK=1 sbcl --script scripts/validate.lisp
           sbcl --script scripts/test-source-ledger.lisp
 
+      - name: Alexandria for reading the .asd files (not shipped; see README)
+        if: steps.decide.outputs.skip == ''
+        run: |
+          set -eu
+          git clone --depth 1 --branch v1.4 https://gitlab.common-lisp.net/alexandria/alexandria.git "$RUNNER_TEMP/alexandria"
+          test "$(git -C "$RUNNER_TEMP/alexandria" rev-parse HEAD)" = 49e82add16cb9f1ffa72c77cd687271247181ff3
+          echo "CL_SOURCE_REGISTRY=$RUNNER_TEMP/alexandria/" >> "$GITHUB_ENV"
+
       - name: Generate the dist
         if: steps.decide.outputs.skip == ''
         env:
