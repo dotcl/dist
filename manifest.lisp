@@ -921,4 +921,25 @@
            any assertion over about 37 microseconds got a (Nms) suffix and the
            is-print test of prove's own suite, which compares report lines as
            strings, failed on dotcl only. The duration is now converted to
-           milliseconds.")))
+           milliseconds.")
+
+  (:lib "cl-cont"
+   :upstream "cl-cont/cl-cont"
+   :upstream-host :gitlab-clo
+   :disposition :fork-only
+   :ref ("dotcl/cl-cont" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream merge request lands and a quicklisp dist ships the merged version"
+   :notes "Upstream lives on gitlab.common-lisp.net, which has no GitHub fork, so
+           dotcl/cl-cont is a plain repository: master is upstream's master as
+           pushed, branch dotcl is one commit on top of it. dotcl expands
+           HANDLER-BIND to (unwind-protect BODY (pop-handler-cluster)); the CPS
+           conversion of UNWIND-PROTECT does not convert the protected form, so a
+           RETURN-FROM inside it named a BLOCK the conversion had removed
+           (return for unknown block: HC-BLOCK), and HANDLER-CASE and
+           IGNORE-ERRORS under WITH-CALL/CC failed to compile. The commit
+           converts the protected form of that one shape to CPS and leaves every
+           other UNWIND-PROTECT as it was. cl-coroutine-test runs 17 of 17 on
+           dotcl and on SBCL. Not covered: a HANDLER-CASE whose body signals an
+           error lets it out of WITH-CALL/CC on SBCL as well, so the library does
+           not support that use anywhere.")))
