@@ -888,4 +888,37 @@
            The system zacl-aserve is a shim for the older portableaserve and
            still does not load, as before. This entry follows the mirror's default branch
            because the merge is there and the stock distribution does not have
-           it yet.")))
+           it yet.")
+
+  (:lib "more-conditions"
+   :upstream "scymtym/more-conditions"
+   :disposition :fork-only
+   :ref ("dotcl/more-conditions" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream pull request merges and a quicklisp dist ships the merged version"
+   :notes "Adds dotcl to the SBCL branches of conditions.lisp (maybe-print-cause and
+           the :after method of print-object on reference-condition), using
+           dotcl:pretty-stream-p where SBCL uses sb-pretty:pretty-stream-p, and
+           makes the test expect the output of the SBCL branch on dotcl as well.")
+
+  (:lib "trivial-macroexpand-all"
+   :upstream "cbaggers/trivial-macroexpand-all"
+   :disposition :fork-only
+   :ref ("dotcl/trivial-macroexpand-all" :branch "dotcl")
+   :pr nil
+   :retire-when "an upstream pull request merges and a quicklisp dist ships the merged version"
+   :notes "Adds dotcl to the implementations it supports.")
+
+  (:lib "prove"
+   :upstream "fukamachi/prove"
+   :disposition :fork-only
+   :ref ("dotcl/prove" :branch "dotcl")
+   :pr nil
+   :retire-when "upstream takes the fix (it is archived, so more likely: never) or dotcl no longer needs it"
+   :notes "Test durations were the raw difference of get-internal-real-time, printed
+           as milliseconds. Where internal-time-units-per-second is 1000000, as on
+           SBCL and dotcl, the slow threshold of 75 was really 75 microseconds, so
+           any assertion over about 37 microseconds got a (Nms) suffix and the
+           is-print test of prove's own suite, which compares report lines as
+           strings, failed on dotcl only. The duration is now converted to
+           milliseconds.")))
