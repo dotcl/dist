@@ -89,6 +89,7 @@ until it catches up, which is exactly what :retire-when describes."
   '((:github . "https://github.com/~a.git")
     (:codeberg . "https://codeberg.org/~a.git")
     (:kpe-git . "http://git.kpe.io/~a.git")
+    (:gitlab-clo . "https://gitlab.common-lisp.net/~a.git")
     (:sourceforge . nil))
   "Known :upstream-host values, mapped to a clone URL template.
 
