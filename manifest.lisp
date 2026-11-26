@@ -392,10 +392,10 @@
 
   (:lib "usocket"
    :upstream "usocket/usocket"
-   :disposition :upstream-pr-open
-   :ref ("dotcl/usocket" :branch "dotcl")
+   :disposition :upstream-merged
+   :ref :upstream-default
    :pr "usocket/usocket#144"
-   :retire-when "PR 144 merges and a quicklisp dist ships the merged version"
+   :retire-when "a quicklisp dist ships a usocket that includes PR 144"
    :notes "A dotcl backend that does what the SBCL backend does with
            sb-bsd-sockets: it calls dotcl's dotcl-bsd-sockets module and maps
            that module's conditions onto usocket's. Name resolution, address
@@ -410,10 +410,10 @@
            so the failure is a run-time UNDEFINED-FUNCTION rather than a load
            error.
 
-           PR 144 filed 2026-08-19 and brought up to date with the branch on
-           2026-10-24: one new file, four #+dotcl clauses in option.lisp and one
-           .asd entry, with no existing backend touched. Upstream has been quiet
-           since 2026-05.")
+           PR 144 filed 2026-08-19 and merged 2026-11-24: one new file, four
+           #+dotcl clauses in option.lisp and one .asd entry, with no existing
+           backend touched. This entry follows upstream's default branch because
+           the merge is there and the stock distribution does not have it yet.")
 
   (:lib "slime"
    :upstream "slime/slime"
